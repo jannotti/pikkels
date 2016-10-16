@@ -1,0 +1,73 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+#react {
+  width: 80%;
+  margin: auto;
+}
+
+.division {
+  width: 50%;
+  display: inline-block;
+  padding: 15px;
+  font-size: 10pt;
+}
+.division td {
+  height: 22px;
+}
+.division.BB-8 {
+  background-color: #fa4;
+}
+.division.R2-D2 {
+  background-color: #68f;
+}
+.division h2 {
+  padding: 0;
+  margin: 0;
+}
+.division th {
+  font-weight: normal;
+}
+.division .wins, .division .losses {
+  text-align: right;
+}
+.division .input {
+  margin: 0;
+  padding: 0;
+}
+
+.game {
+  padding: 2px 5px;
+}
+.game.inter {
+  background-color: #9ef;
+}
+.game.BB-8 {
+  background-color: #fa4;
+}
+.game.R2-D2 {
+  background-color: #68f;
+}
+.winner {
+  background-color: #66ccff;
+}
+tr.day {
+  height: 60px;
+}
+table {
+  border-collapse: collapse;
+}
+.schedule table tr, .schedule table td {
+  border: 2px solid black;
+}
+table th {
+  color: white;
+  background-color: black;
+}
+tr.day th {
+  background-color: #D56C5A;
+}
