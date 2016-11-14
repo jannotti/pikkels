@@ -405,11 +405,26 @@ var TeamList = React.createClass({
   edit: function(id) {
     this.setState({editing: id});
   },
+  handleKeyDown: function(event) {
+    if (event.keyCode === 13) {
+      DB[this.state.editing].name = event.target.value;
+      Team.catalog[this.state.editing].name = event.target.value;
+      event.target.blur();
+    }
+    if (event.keyCode === 27) {
+      event.target.blur();
+    }
+  },
   renderTeam: function(team) {
     if ( this.state.editing === team.id ) {
-      // Handle rendering our edit fields here.
       return <tr key={team.id}>
-              <td colSpan="3"><input type="text" onBlur={_.partial(this.edit,0)} defaultValue={team.name}/></td>
+              <td colSpan="3">
+                <input type="text" autoFocus
+                       size="42"
+                       onKeyDown={this.handleKeyDown}
+                       onBlur={_.partial(this.edit,0)}
+                       defaultValue={team.name}/>
+              </td>
              </tr>;
     } else {
       return <TeamLine onClick={_.partial(this.edit,team.id)} key={team.id} team={team}/>;
@@ -549,3 +564,4 @@ var GameBox = React.createClass({
 
 ReactDOM.render(<LeaguePage id={1}/>,
                 document.getElementById('react'));
+
