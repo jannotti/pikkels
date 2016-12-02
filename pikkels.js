@@ -89,13 +89,17 @@ class League {
   }
 
   unscheduled(matchups) {
+    // As written, clones the matchups, then iterates through calendar
+    // and removes games from the clone if they are on the schedule.
+    // Perhaps clearer to filter the matchups with a test to see if
+    // the game is on the schedule already?
     var unsatisfied = _.clone(matchups);
     _.each(this.schedule.calendar, (slots, date) => {
-      _.each(slots, (game, slot) => {
+      _.each(slots, (game, time) => {
         if (!game)
           return;
         for (var i in unsatisfied) {
-          if (game.satisfies(matchups[i])) {
+          if (game.satisfies(unsatisfied[i])) {
             unsatisfied.splice(i,1);   // remove it
             return;
           }
@@ -253,18 +257,17 @@ class Schedule {
   }
 
   fillFrom(matchups) {
-    var self = this;
     var unused = [];
-    _.each(this.calendar, function (slots, date) {
-      _.each(slots, function (game, slot) {
+    _.each(this.calendar, (slots, date) => {
+      _.each(slots, (game, time) => {
         if (!game && matchups.length > 0) {
-          var matchup = self.extractViable(matchups, date, slot, slots);
+          var matchup = this.extractViable(matchups, date, time, slots);
           if (!matchup) {
-            console.log("Unable to schedule "+date+" "+slot);
-            unused.push([date, slot]);
+            console.log("Unable to schedule "+date+" "+time);
+            unused.push([date, time]);
             return;
           }
-          slots[slot] = new Game(matchup);
+          slots[time] = new Game(matchup);
         }
       });
     });
@@ -273,20 +276,20 @@ class Schedule {
     }
   
     var fixed = [];
-    _.each(this.calendar, function (slots, date) {
+    _.each(this.calendar, (slots, date) => {
       if (matchups.length == 0) return false;
-      _.each(slots, function (game, slot) {
+      _.each(slots, (game, slot) => {
         if (matchups.length == 0) return false;
-        _.each(matchups, function(leftover, li) {
-          if (self.isViable(leftover, date, slot, slots)) {
-            var candidate = self.calendar[date][slot];
+        var candidate = this.calendar[date][slot];
+        if (!candidate || candidate.pinned) return false;
+        _.each(matchups, (leftover, li) => {
+          if (this.isViable(leftover, date, slot, slots)) {
             for (var i = 0; i < unused.length; i++) {
-              var u = unused[i];
-              var others = self.calendar[u[0]]
-              console.log(others);
-              if (self.isViable(candidate.matchup, u[0], u[1], others)) {
-                self.calendar[u[0]][u[1]] = self.calendar[date][slot];
-                self.calendar[date][slot] = new Game(leftover);
+              var [uud, uut] = unused[i];
+              var others = this.calendar[uud]
+              if (this.isViable(candidate.matchup, uud, uut, others)) {
+                this.calendar[uud][uut] = candidate;
+                this.calendar[date][slot] = new Game(leftover);
                 fixed.push(leftover);
                 matchups.splice(li, 1); // remove
                 unused.splice(i, 1); // remove
@@ -391,6 +394,7 @@ var LeaguePage = React.createClass({
       if (done)
         break;
       now = performance.now();
+      console.log("Failed attempt took ",now-start,"ms");
     } while (now - start < 100.0); // Work for up to 100ms
     this.forceUpdate();
     // TODO: If we fail, it would be nice to use the "best" schedule we found.
@@ -523,21 +527,18 @@ var Calendar = React.createClass({
   },
 
   render: function() {
-    console.log(this.state);
     var calendar = this.props.calendar;
     var dates = _.sortBy(Object.keys(calendar), Date.parse);
-    var headings = _.sortBy(Object.keys(calendar[dates[0]]), function(slot) {
-      return moment(dates[0] + " " + slot, "MMM DD, YYYY hha");
-    });
-    var self = this;
-    var days = _.map(dates, function (date) {
-      var slots = calendar[date];
-      return (<Day key={date} date={date} slots={slots} headings={headings}
-                   setTarget={self.setTarget}
-                   target={self.state.target}
-                   onUpdate={self.props.onUpdate}/>);
-    });
+    var headings = _.sortBy(Object.keys(calendar[dates[0]]),
+                            time => moment(dates[0] + " " + time,
+                                           "MMM DD, YYYY hha"));
     var heading = headings.map(h => <th key={h}>{h}</th>);
+    var days = dates
+      .map(date =>
+           <Day key={date} date={date} slots={calendar[date]} headings={headings}
+             setTarget={this.setTarget}
+             target={this.state.target}
+             onUpdate={this.props.onUpdate}/>);
 
     return (<div className="schedule">
               <h2>Schedule</h2>
@@ -624,7 +625,6 @@ var GameControl = React.createClass({
     var game = this.props.game;
     var target = this.props.target;
     var moveClick = this.props.moveClick;
-    console.log("target", target);
     return <div>
       <span className={game == target ? "moving" : "prepmove"}
             onClick={moveClick}>
