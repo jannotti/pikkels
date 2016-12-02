@@ -43,76 +43,99 @@ var DB = {
        }},
 };
 
-
-function League(id, db) {
-  this.id = id;
-}
-League.prototype.hydrate = function(id, db) {
-  var json = db[id];
-  this.name = json.name;
-  this.nick = this.name;
-  if ('nick' in json) this.nick = json.nick;
-
-  this.divisions = json.divisions.map(function(id) {
-    return hydrate(Division, id, db);
-  });
-
-  var matchups = this.allMatchups();
-
-  this.schedule = new Schedule(json.schedule, db);
-  _.each(this.schedule.calendar, function (slots, date) {
-    _.each(slots, function (game, slot) {
-      if (!game)
-        return;
-      for (var i in matchups) {
-        if (game.satisfies(matchups[i])) {
-          matchups.splice(i,1);   // remove it
-          return;
-        }
-      }
-    });
-  });
-
-  this.matchups = matchups;
-  this.unsatisfied = this.schedule.fill(_.clone(matchups));
-}
-
-League.prototype.allMatchups = function() {
-  // Alternate among the divisions' matchups.
-  // TODO: What happens if divisions not same size?
-  var matchups = _.flatten(_.zip.apply(undefined,
-                                       (_.map(this.divisions, 'matchups'))));
-
-  // PKL specific: If divisions have an odd number, we need to add
-  // interleague games so that we can schedule everyone on opening day.
-  var divsize = this.divisions[0].teams.length;
-  if (this.divisions.length == 2 && divsize % 2 == 1) {
-    var interleague = _.zip.apply(undefined, (_.map(this.divisions, 'teams')));
-    for (var i = 0; i < interleague.length; i++) {
-      matchups.splice(6+i*divsize, 0, interleague[i]);
-    }
+class League {
+  constructor(id, db) {
+    this.id = id;
+    this.unsatisfied = [];
   }
-  return matchups;
+
+  hydrate(id, db) {
+    var json = db[id];
+    this.name = json.name;
+    this.nick = this.name;
+    if ('nick' in json) this.nick = json.nick;
+
+    this.divisions = json.divisions.map(id => hydrate(Division, id, db));
+
+    this.schedule = new Schedule(json.schedule, db);
+    this.matchups = this.allMatchups();
+  }
+
+  allMatchups() {
+    // Alternate among the divisions' matchups.
+    // TODO: What happens if divisions not same size?
+    var matchups = _.flatten(_.zip.apply(undefined,
+                                         (_.map(this.divisions, 'matchups'))));
+
+    // PKL specific: If divisions have an odd number, we need to add
+    // interleague games so that we can schedule everyone on opening day.
+    var divsize = this.divisions[0].teams.length;
+    if (this.divisions.length == 2 && divsize % 2 == 1) {
+      var interleague = _.zip.apply(undefined, (_.map(this.divisions, 'teams')));
+      for (var i = 0; i < interleague.length; i++) {
+        matchups.splice(6+i*divsize, 0, interleague[i]);
+      }
+    }
+    return matchups;
+  }
+
+  reschedule() {
+    this.clearGames();
+    var unsatisfied = this.unscheduled(this.matchups);
+    this.matchups = _.shuffle(this.matchups); // For next reschedule
+    this.schedule.fillFrom(unsatisfied);
+    this.unsatisfied = unsatisfied;
+    return unsatisfied.length == 0;
+  }
+
+  unscheduled(matchups) {
+    var unsatisfied = _.clone(matchups);
+    _.each(this.schedule.calendar, (slots, date) => {
+      _.each(slots, (game, slot) => {
+        if (!game)
+          return;
+        for (var i in unsatisfied) {
+          if (game.satisfies(matchups[i])) {
+            unsatisfied.splice(i,1);   // remove it
+            return;
+          }
+        }
+      });
+    });
+    return unsatisfied;
+  }
+
+  clearGames() {
+    _.each(this.divisions, function(div) {
+      _.each(div.teams, function(team) {
+        team.games =  _.filter(team.games, game => game.pinned);
+      });
+    });
+    this.schedule.clear();
+  }
 }
 
-function Division(id) {
-  this.id = id;
-}
-Division.prototype.hydrate = function(id, db) {
-  var json = db[id];
-  this.name = json.name;
-  this.nick = this.name;
-  if ('nick' in json) this.nick = json.nick;
+class Division {
+  constructor(id) {
+    this.id = id;
+  }
 
-  var self = this;
-  this.teams = json.teams.map(function(id) {
-    var team = hydrate(Team, id, db);
-    team.division = self;
-    return team;
-  });
+  hydrate(id, db) {
+    var json = db[id];
+    this.name = json.name;
+    this.nick = this.name;
+    if ('nick' in json) this.nick = json.nick;
 
-  this.matchups = roundRobin(this.teams);
+    this.teams = json.teams.map(id => {
+      var team = hydrate(Team, id, db);
+      team.division = this;
+      return team;
+    });
+
+    this.matchups = roundRobin(this.teams);
+  }
 }
+
 
 function roundRobin(teams) {
   var copy = teams.slice();
@@ -160,190 +183,196 @@ function hydrate(cls, id, db) {
 }
 hydrate.ID = _.max(_.keys(DB).map(_.parseInt))+1;
 
-function Team(id) {
-  this.id = id;
-}
-Team.prototype.hydrate = function(id, db) {
-  var json = db[id];
-  this.name = json.name;
-  this.nick = this.name;
-  if ('nick' in json) this.nick = json.nick;
-
-  this.games = [];
-  if ('games' in json)
-    this.games = json.games.map(function(id) {
-      return hydrate(Game, id, db);
-    });
-
-  this.exclude = [];
-  if ('exclude' in json) this.exclude = json.exclude;
-}
-Team.prototype.wins = function() {
-  var self = this;
-  return _.filter(this.games, function(game) { return game.winner === self; }).length;
-}
-Team.prototype.losses = function() {
-  var self = this;
-  return _.filter(this.games, function(game) { return game.winner && game.winner !== self; }).length;
-}
-Team.prototype.rank = function() {
-  var w = this.wins();
-  var l = this.losses();
-  var pct =  (w + l == 0) ? 0.5 : w / (w + l);
-  return  (w-l) + pct;
-}
-Team.prototype.hates = function(date, slot) {
-  return this.exclude.includes(date) ||  this.exclude.includes(slot);
-}
-Team.prototype.noteGame = function(game) {
-  if (this.games.includes(game))
-    return;
-  this.games.push(game);
-}
-
-function Schedule(id, db) {
-  this.id = id;
-  var json = db[id];
-
-  var calendar = {};
-  _.each(json.calendar, function (slots, date) {
-    calendar[date] = _.mapValues(slots, function(game) {
-      return game ? hydrate(Game, game, db) : null;
-    });
-  });
-  this.calendar = calendar;
-}
-Schedule.prototype.clear = function(matchups) {
-  var calendar = {};
-  _.each(this.calendar, function (slots, date) {
-    calendar[date] = _.mapValues(slots, function(game) {
-      return null;
-    });
-  });
-  this.calendar = calendar;
-}
-Schedule.prototype.refill = function(matchups) {
-  this.clear();
-  return this.fill(matchups);
-}
-Schedule.prototype.fill = function(matchups) {
-  var self = this;
-  var unused = [];
-  _.each(this.calendar, function (slots, date) {
-    _.each(slots, function (game, slot) {
-      if (!game && matchups.length > 0) {
-        var matchup = self.extractViable(matchups, date, slot, slots);
-        if (!matchup) {
-          console.log("Unable to schedule "+date+" "+slot);
-          unused.push([date, slot]);
-          return;
-        }
-        slots[slot] = new Game(matchup);
-      }
-    });
-  });
-  if (matchups.length > 0) {
-    console.log("Unable to schedule", _.clone(matchups));
+class Team {
+  constructor(id) {
+    this.id = id;
   }
-  
-  var fixed = [];
-  _.each(this.calendar, function (slots, date) {
-    if (matchups.length == 0) return false;
-    _.each(slots, function (game, slot) {
-      if (matchups.length == 0) return false;
-      _.each(matchups, function(leftover, li) {
-        if (self.isViable(leftover, date, slot, slots)) {
-          console.log("Exchange?", leftover, date, slot);
-          var candidate = self.calendar[date][slot];
-          for (var i = 0; i < unused.length; i++) {
-            var u = unused[i];
-            var others = self.calendar[u[0]]
-            console.log(others);
-            if (self.isViable(candidate.matchup, u[0], u[1], others)) {
-              self.calendar[u[0]][u[1]] = self.calendar[date][slot];
-              self.calendar[date][slot] = new Game(leftover);
-              fixed.push(leftover);
-              console.log("SWAP");
-              matchups.splice(li, 1); // remove
-              unused.splice(i, 1); // remove
-              return false;         // Move on through calendar
-            }
+
+  hydrate(id, db) {
+    var json = db[id];
+    this.name = json.name;
+    this.nick = this.name;
+    if ('nick' in json) this.nick = json.nick;
+
+    this.games = [];
+    if ('games' in json)
+      this.games = json.games.map(id => hydrate(Game, id, db));
+
+    this.exclude = [];
+    if ('exclude' in json) this.exclude = json.exclude;
+  }
+
+  wins() {
+    return _.filter(this.games, game => game.winner && game.winner === this).length;
+  }
+
+  losses() {
+    return _.filter(this.games, game => game.winner && game.winner !== this).length;
+  }
+
+  rank() {
+    var w = this.wins();
+    var l = this.losses();
+    var pct =  (w + l == 0) ? 0.5 : w / (w + l);
+    return  (w-l) + pct;
+  }
+
+  hates(date, slot) {
+    return this.exclude.includes(date) ||  this.exclude.includes(slot);
+  }
+
+  noteGame(game) {
+    if (this.games.includes(game))
+      return;
+    this.games.push(game);
+  }
+}
+
+class Schedule {
+  constructor(id, db) {
+    this.id = id;
+    var json = db[id];
+
+    var calendar = {};
+    _.each(json.calendar, function (slots, date) {
+      calendar[date] = _.mapValues(slots, function(game) {
+        return game ? hydrate(Game, game, db) : null;
+      });
+    });
+    this.calendar = calendar;
+  }
+
+  clear(matchups) {
+    var calendar = {};
+    _.each(this.calendar, function (slots, date) {
+      calendar[date] = _.mapValues(slots, function(game) {
+        return game && game.pinned ? game : null;
+      });
+    });
+    this.calendar = calendar;
+  }
+
+  fillFrom(matchups) {
+    var self = this;
+    var unused = [];
+    _.each(this.calendar, function (slots, date) {
+      _.each(slots, function (game, slot) {
+        if (!game && matchups.length > 0) {
+          var matchup = self.extractViable(matchups, date, slot, slots);
+          if (!matchup) {
+            console.log("Unable to schedule "+date+" "+slot);
+            unused.push([date, slot]);
+            return;
           }
+          slots[slot] = new Game(matchup);
         }
       });
     });
-  });
-  return matchups;
-}
-Schedule.prototype.isViable = function(matchup, date, slot, scheduled) {
-  // Skip if either team hates the date or time.
-  if (matchup[0].hates(date, slot) || matchup[1].hates(date, slot)) {
-    return false;
+    if (matchups.length > 0) {
+      console.log("Unable to schedule", _.clone(matchups));
+    }
+  
+    var fixed = [];
+    _.each(this.calendar, function (slots, date) {
+      if (matchups.length == 0) return false;
+      _.each(slots, function (game, slot) {
+        if (matchups.length == 0) return false;
+        _.each(matchups, function(leftover, li) {
+          if (self.isViable(leftover, date, slot, slots)) {
+            var candidate = self.calendar[date][slot];
+            for (var i = 0; i < unused.length; i++) {
+              var u = unused[i];
+              var others = self.calendar[u[0]]
+              console.log(others);
+              if (self.isViable(candidate.matchup, u[0], u[1], others)) {
+                self.calendar[u[0]][u[1]] = self.calendar[date][slot];
+                self.calendar[date][slot] = new Game(leftover);
+                fixed.push(leftover);
+                matchups.splice(li, 1); // remove
+                unused.splice(i, 1); // remove
+                return false;         // Move on through calendar
+              }
+            }
+          }
+        });
+      });
+    });
+    return matchups;
   }
-  // Skip if either team already plays in a game that day.
-  return _.every(scheduled, function(game, slot) {
-    if (game) {
-      if (game.involves(matchup[0]) || game.involves(matchup[1])) {
-        return false;
+
+  isViable(matchup, date, slot, scheduled) {
+    // Skip if either team hates the date or time.
+    if (matchup[0].hates(date, slot) || matchup[1].hates(date, slot)) {
+      return false;
+    }
+    // Skip if either team already plays in a game that day.
+    return _.every(scheduled, function(game, slot) {
+      if (game) {
+        if (game.involves(matchup[0]) || game.involves(matchup[1])) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  extractViable(matchups, date, slot, scheduled) {
+    for (var m = 0; m < matchups.length; m++) {
+      var matchup = matchups[m];
+      if (this.isViable(matchup, date, slot, scheduled)) {
+        matchups.splice(m,1);
+        return matchup;
       }
     }
-    return true;
-  });
-
-}
-Schedule.prototype.extractViable = function(matchups, date, slot, scheduled) {
-  for (var m = 0; m < matchups.length; m++) {
-    var matchup = matchups[m];
-    if (this.isViable(matchup, date, slot, scheduled)) {
-      matchups.splice(m,1);
-      return matchup;
-    }
+    return null;
   }
-  return null;
 }
 
-function Game(id) {
-  if (typeof id == "number") {
-    this.id = id;
-  } else {
-    var matchup = id;
-    this.id = hydrate.ID++;
-    this.matchup = matchup;
+class Game {
+  constructor(id) {
+    if (typeof id == "number") {
+      this.id = id;
+    } else {
+      var matchup = id;
+      this.id = hydrate.ID++;
+      this.matchup = matchup;
+      this.tellTeams();
+    }
+    this.pinned = false;
+  }
+
+  hydrate (id, db) {
+    var json = db[id];
+    this.matchup = _.map(json.matchup, t => hydrate(Team, t, db));
     this.tellTeams();
-  }
-}
-
-Game.prototype.hydrate = function (id, db) {
-  var json = db[id];
-  var self = this;
-  this.matchup = _.map(json.matchup, function(t) {
-    return hydrate(Team, t, db);
-  });
-  this.tellTeams();
-  if ('winner' in json)
-    this.winner = hydrate(Team, json.winner, db);
-  else
-    this.winner = null;
-  if ('score' in json) {
-    this.score = json.score;
-    if (this.score[0] > this.score[1])
-      this.winner = this.matchup[0];
-    else if (this.score[1] > this.score[0]) {
-      this.winner = this.matchup[1];
+    if ('winner' in json)
+      this.winner = hydrate(Team, json.winner, db);
+    else
+      this.winner = null;
+    if ('score' in json) {
+      this.score = json.score;
+      if (this.score[0] > this.score[1])
+        this.winner = this.matchup[0];
+      else if (this.score[1] > this.score[0]) {
+        this.winner = this.matchup[1];
+      }
     }
+    this.score = json.score;
+    this.pinned = true;
   }
-  this.score = json.score;
-}
-Game.prototype.tellTeams = function () {
-  var self = this;
-  _.each(this.matchup, function(team) { team.noteGame(self); });
-}
-Game.prototype.satisfies = function(matchup) {
-  return this.matchup[0] === matchup[0] && this.matchup[1] === matchup[1] ||
-    this.matchup[0] === matchup[1] && this.matchup[1] === matchup[0];
-}
-Game.prototype.involves = function(team) {
-  return this.matchup[0] === team || this.matchup[1] === team;
+
+  tellTeams() {
+    _.each(this.matchup, team => team.noteGame(this));
+  }
+
+  satisfies(matchup) {
+    return this.matchup[0] === matchup[0] && this.matchup[1] === matchup[1] ||
+      this.matchup[0] === matchup[1] && this.matchup[1] === matchup[0];
+  }
+
+  involves(team) {
+    return this.matchup[0] === team || this.matchup[1] === team;
+  }
 }
 
 
@@ -355,15 +384,16 @@ var LeaguePage = React.createClass({
   },
   handleReschedule(e) {
     e.preventDefault();
-    var unsatisfied;
-    for (var attempt = 0; attempt < 15; attempt++) {
-      unsatisfied = _.shuffle(this.state.league.matchups);
-      this.state.league.schedule.refill(unsatisfied);
-      if (unsatisfied.length == 0)
+    var start = performance.now();
+    var now = start;
+    do {
+      var done = this.state.league.reschedule();
+      if (done)
         break;
-    }
-    this.state.league.unsatisfied = unsatisfied;
+      now = performance.now();
+    } while (now - start < 100.0); // Work for up to 100ms
     this.forceUpdate();
+    // TODO: If we fail, it would be nice to use the "best" schedule we found.
   },
   render() {
     var league = this.state.league;
@@ -371,7 +401,6 @@ var LeaguePage = React.createClass({
     return (<div className="league">
               <h1>{league.name}</h1>
               <Divisions league={league}/>
-
               <Unsatisfied league={league}/>
               <form onSubmit={this.handleReschedule}>
                 <input type="submit" value="Reschedule" />
@@ -384,15 +413,10 @@ var LeaguePage = React.createClass({
 
 var Divisions = React.createClass({
   render: function() {
-    var league = this.props.league;
-    var divisions = league.divisions.map(function(division) {
-      return <TeamList key={division.id} division={division}/>;
-    });
+    var divisions = this.props.league.divisions
+      .map(division => <TeamList key={division.id} division={division}/>);
 
-    return (<div className="standings">
-              {divisions}
-            </div>
-           );
+    return <div className="standings"> {divisions} </div>;
   }
 });
 
@@ -432,14 +456,11 @@ var TeamList = React.createClass({
   },
   render: function() {
     var division = this.props.division;
-    var lines = division.teams.sort(function(a, b) {
-      return b.rank() - a.rank();
-    }).map(function(team) {
-      return this.renderTeam(team);
-    }, this);
-    var divClass = division.nick;
+    var lines = division.teams
+      .sort((a, b) => b.rank() - a.rank())
+      .map(team => this.renderTeam(team));
 
-    return (<div className={divClass + " division"}>
+    return (<div className={division.nick + " division"}>
               <h2>{division.name} Division</h2>
               <table>
                 <tbody>
@@ -467,9 +488,9 @@ var TeamLine = React.createClass({
 var Unsatisfied = React.createClass({
   render: function() {
     var league = this.props.league;
-    var unscheduled = league.unsatisfied.map(function(matchup) {
-      return <li key={matchup[0].id+"-"+matchup[1].id}>{matchup[0].nick} <i>vs</i> {matchup[1].nick}</li>
-    });
+    var unscheduled = league.unsatisfied
+      .map(matchup =>
+           <li key={matchup[0].id+"-"+matchup[1].id}>{matchup[0].nick} <i>vs</i> {matchup[1].nick}</li>);
     if (unscheduled.length == 0)
       return <div></div>;
     return (<div className="unsatisfied">
@@ -482,7 +503,27 @@ var Unsatisfied = React.createClass({
 });
 
 var Calendar = React.createClass({
+  getInitialState: function() {
+    return {
+      target: null
+    };
+  },
+
+  setTarget: function(game) {
+    if (!this.state.target) {
+      this.setState({target: game});
+      return;
+    }
+
+    if (this.state.target != game) {
+      console.log("swap", this.state.target, game)
+    }
+    
+    this.setState({target: null});
+  },
+
   render: function() {
+    console.log(this.state);
     var calendar = this.props.calendar;
     var dates = _.sortBy(Object.keys(calendar), Date.parse);
     var headings = _.sortBy(Object.keys(calendar[dates[0]]), function(slot) {
@@ -491,11 +532,12 @@ var Calendar = React.createClass({
     var self = this;
     var days = _.map(dates, function (date) {
       var slots = calendar[date];
-      return (<Day key={date} date={date} slots={slots} headings={headings} onUpdate={self.props.onUpdate}/>);
+      return (<Day key={date} date={date} slots={slots} headings={headings}
+                   setTarget={self.setTarget}
+                   target={self.state.target}
+                   onUpdate={self.props.onUpdate}/>);
     });
-    var heading = _.map(headings, function (h) {
-      return (<th key={h}>{h}</th>);
-    });
+    var heading = headings.map(h => <th key={h}>{h}</th>);
 
     return (<div className="schedule">
               <h2>Schedule</h2>
@@ -519,7 +561,11 @@ var Day = React.createClass({
     var self = this;
     _.each(headings, function(heading) {
       if (heading in slots && slots[heading]) {
-        boxes.push(<GameBox key={slots[heading].id} game={slots[heading]} onUpdate={self.props.onUpdate}/>);
+        boxes.push(<GameBox key={slots[heading].id}
+                            game={slots[heading]}
+                            setTarget={self.props.setTarget}
+                            target={self.props.target}
+                            onUpdate={self.props.onUpdate}/>);
       } else {
         boxes.push(<td key={date + heading}>&nbsp;</td>);
       }
@@ -533,7 +579,11 @@ var Day = React.createClass({
 });
 
 var GameBox = React.createClass({
-  handleClick: function(i, e) {
+  moveClick: function (ev) {
+    this.props.setTarget(this.props.game);
+  },
+
+  teamClick: function(i, ev) {
     var game = this.props.game;
     if (game.winner == game.matchup[i])
       game.winner = null
@@ -553,12 +603,38 @@ var GameBox = React.createClass({
       awayClass = game.matchup[0] == game.winner ? "winner" : "loser";
       homeClass = game.matchup[1] == game.winner ? "winner" : "loser";
     }
+
     return (<td className={gameClass + " game"}>
-            <span className={awayClass} onClick={_.partial(this.handleClick,0)}>{game.matchup[0].nick}</span>
+            <GameControl game={game} target={this.props.target} moveClick={this.moveClick}/>
+            <span className={awayClass} onClick={_.partial(this.teamClick,0)}>{game.matchup[0].nick}</span>
             <i> vs </i>
-            <span className={homeClass} onClick={_.partial(this.handleClick,1)}>{game.matchup[1].nick}</span>
+            <span className={homeClass} onClick={_.partial(this.teamClick,1)}>{game.matchup[1].nick}</span>
             </td>
     );
+  }
+});
+
+var GameControl = React.createClass({
+  togglePin: function (game) {
+    game.pinned = !game.pinned;
+    this.forceUpdate();
+  },
+
+  render: function() {
+    var game = this.props.game;
+    var target = this.props.target;
+    var moveClick = this.props.moveClick;
+    console.log("target", target);
+    return <div>
+      <span className={game == target ? "moving" : "prepmove"}
+            onClick={moveClick}>
+        <img width="20" src="image/move.png"/>
+      </span>
+      <span className={game.pinned ? "pinned" : "unpinned"}
+            onClick={_.partial(this.togglePin, game)}>
+        <img width="20" src="image/pin.png"/>
+      </span>
+      </div>
   }
 });
 
