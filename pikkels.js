@@ -110,11 +110,11 @@ class League {
   }
 
   clearGames() {
-    _.each(this.divisions, function(div) {
-      _.each(div.teams, function(team) {
+    for (var div of this.divisions) {
+      for (var team of div.teams) {
         team.games =  _.filter(team.games, game => game.pinned);
-      });
-    });
+      }
+    }
     this.schedule.clear();
   }
 }
@@ -365,7 +365,7 @@ class Game {
   }
 
   tellTeams() {
-    _.each(this.matchup, team => team.noteGame(this));
+    this.matchup.forEach(team => team.noteGame(this));
   }
 
   satisfies(matchup) {
@@ -559,18 +559,17 @@ var Day = React.createClass({
     var slots = this.props.slots;
     var headings = this.props.headings;
     var boxes = [];
-    var self = this;
-    _.each(headings, function(heading) {
+    for (var heading of headings) {
       if (heading in slots && slots[heading]) {
         boxes.push(<GameBox key={slots[heading].id}
                             game={slots[heading]}
-                            setTarget={self.props.setTarget}
-                            target={self.props.target}
-                            onUpdate={self.props.onUpdate}/>);
+                            setTarget={this.props.setTarget}
+                            target={this.props.target}
+                            onUpdate={this.props.onUpdate}/>);
       } else {
         boxes.push(<td key={date + heading}>&nbsp;</td>);
       }
-    });
+    };
     return (<tr className="day">
               <th>{moment(this.props.date, "MMM DD, YYYY").format("MMM D")}</th>
               {boxes}
