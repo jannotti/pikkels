@@ -52,6 +52,18 @@ body {
 .game.R2-D2 {
   background-color: #68f;
 }
+.game .gameControl {
+  display: none;
+}
+.game:hover .gameControl {
+  display: block;
+}
+.game .unpinned {
+  opacity: 0.2;
+}
+.game .prepmove {
+  opacity: 0.2;
+}
 .winner {
   background-color: #66ccff;
 }
