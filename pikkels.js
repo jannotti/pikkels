@@ -94,6 +94,7 @@ class League {
     // Perhaps clearer to filter the matchups with a test to see if
     // the game is on the schedule already?
     var unsatisfied = _.clone(matchups);
+    // CHANGE
     _.each(this.schedule.calendar, (slots, date) => {
       _.each(slots, (game, time) => {
         if (!game)
@@ -237,6 +238,7 @@ class Schedule {
     this.id = id;
     var json = db[id];
 
+    // CHANGE
     var calendar = {};
     _.each(json.calendar, function (slots, date) {
       calendar[date] = _.mapValues(slots, function(game) {
@@ -246,7 +248,31 @@ class Schedule {
     this.calendar = calendar;
   }
 
+  swap(g1, g2) {
+    console.log("swap", g1, g2);
+    var [d1, t1] = this.find(g1);
+    var [d2, t2] = this.find(g2);
+    // CHANGE
+    this.calendar[d1][t1] = g2
+    this.calendar[d2][t2] = g1;
+  }
+
+  find(game) {
+    // CHANGE
+    for (var date of Object.keys(this.calendar)) {
+      var times = this.calendar[date];
+      for (var time of Object.keys(times)) {
+        if (game === times[time])
+          return [date, time];
+      };
+    }
+    console.log("Can't find", game);
+    return undefined;
+  }
+
+
   clear(matchups) {
+    // CHANGE
     var calendar = {};
     _.each(this.calendar, function (slots, date) {
       calendar[date] = _.mapValues(slots, function(game) {
@@ -258,6 +284,7 @@ class Schedule {
 
   fillFrom(matchups) {
     var unused = [];
+    // CHANGE
     _.each(this.calendar, (slots, date) => {
       _.each(slots, (game, time) => {
         if (!game && matchups.length > 0) {
@@ -275,7 +302,7 @@ class Schedule {
       console.log("Unable to schedule", _.clone(matchups));
     }
   
-    var fixed = [];
+    // CHANGE
     _.each(this.calendar, (slots, date) => {
       if (matchups.length == 0) return false;
       _.each(slots, (game, slot) => {
@@ -290,7 +317,6 @@ class Schedule {
               if (this.isViable(candidate.matchup, uud, uut, others)) {
                 this.calendar[uud][uut] = candidate;
                 this.calendar[date][slot] = new Game(leftover);
-                fixed.push(leftover);
                 matchups.splice(li, 1); // remove
                 unused.splice(i, 1); // remove
                 return false;         // Move on through calendar
@@ -409,7 +435,7 @@ var LeaguePage = React.createClass({
               <form onSubmit={this.handleReschedule}>
                 <input type="submit" value="Reschedule" />
               </form>
-              <Calendar calendar={league.schedule.calendar} onUpdate={this.forceUpdate.bind(this)}/>
+              <Calendar schedule={league.schedule} onUpdate={this.forceUpdate.bind(this)}/>
             </div>
            );
   }
@@ -520,14 +546,15 @@ var Calendar = React.createClass({
     }
 
     if (this.state.target != game) {
-      console.log("swap", this.state.target, game)
+      this.props.schedule.swap(this.state.target, game);
+      this.state.target.pinned = true;
     }
-    
+
     this.setState({target: null});
   },
 
   render: function() {
-    var calendar = this.props.calendar;
+    var calendar = this.props.schedule.calendar;
     var dates = _.sortBy(Object.keys(calendar), Date.parse);
     var headings = _.sortBy(Object.keys(calendar[dates[0]]),
                             time => moment(dates[0] + " " + time,
