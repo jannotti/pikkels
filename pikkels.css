@@ -11,9 +11,6 @@ body {
 }
 
 .division {
-  width: 50%;
-  display: inline-block;
-  padding: 15px;
   font-size: 10pt;
 }
 .division td {
