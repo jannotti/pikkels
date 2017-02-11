@@ -22,10 +22,6 @@ body {
 .division.R2-D2 {
   background-color: #68f;
 }
-.division h2 {
-  padding: 0;
-  margin: 0;
-}
 .division th {
   font-weight: normal;
 }
@@ -37,8 +33,11 @@ body {
   padding: 0;
 }
 
-.game {
+.day > div {
   padding: 2px 5px;
+}
+.game {
+  font-size: smaller;
 }
 .game.inter {
   background-color: #9ef;
@@ -64,19 +63,13 @@ body {
 .winner {
   background-color: #66ccff;
 }
-tr.day {
-  height: 60px;
-}
-table {
-  border-collapse: collapse;
-}
 .schedule table tr, .schedule table td {
   border: 2px solid black;
 }
-table th {
+.time {
   color: white;
   background-color: black;
 }
-tr.day th {
+.day {
   background-color: #D56C5A;
 }

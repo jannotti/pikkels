@@ -568,9 +568,9 @@ var Calendar = React.createClass({
 
     return (<div className="schedule">
               <h2>Schedule</h2>
-                <div className="row hidden-md-down">
+                <div className="row hidden-lg-down">
                     <div className="col">Saturday</div>
-                    {headings.map(h => <div key={h} className="col">{h}</div>)}
+                    {headings.map(h => <div key={h} className="col time">{h}</div>)}
                 </div>
                 {days}
             </div>
@@ -593,11 +593,11 @@ var Day = React.createClass({
                             target={this.props.target}
                             onUpdate={this.props.onUpdate}/>);
       } else {
-        boxes.push(<div className="game hidden-md-down col-lg-1" key={date + heading}>&nbsp;</div>);
+        boxes.push(<div className="game hidden-lg-down col-xl" key={date + heading}>&nbsp;</div>);
       }
     };
     return (<div className="row day">
-              <div className="col-lg">
+              <div className="col-xl">
                 {moment(this.props.date, "MMM DD, YYYY").format("MMM D")}
               </div>
               {boxes}
@@ -633,7 +633,7 @@ var GameBox = React.createClass({
       homeClass = game.matchup[1] == game.winner ? "winner" : "loser";
     }
 
-    return (<div className={gameClass + " game col-md-2 col-lg-1"}>
+    return (<div className={gameClass + " game col-md-2 col-xl"}>
             <GameControl game={game} time={time}
                          target={this.props.target} moveClick={this.moveClick}/>
             <span className={awayClass} onClick={_.partial(this.teamClick,0)}>{game.matchup[0].nick}</span>
@@ -664,7 +664,7 @@ var GameControl = React.createClass({
             onClick={_.partial(this.togglePin, game)}>
         <img width="20" src="image/pin.png"/>
       </span>
-      <span className="float-right text-muted hidden-lg-up">{time}</span>
+      <span className="float-right text-muted hidden-xl-up">{time}</span>
       </div>
   }
 });
