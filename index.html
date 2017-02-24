@@ -12,6 +12,14 @@
     <script src="https://unpkg.com/babel-core@5.8.38/browser.min.js"></script>
 
 
+    <script src="https://www.gstatic.com/firebasejs/3.6.9/firebase.js"></script>
+    <script>
+    </script>
+    <script src="https://cdn.firebase.com/libs/firebaseui/1.0.0/firebaseui.js"></script>
+    <link type="text/css" rel="stylesheet"
+          href="https://cdn.firebase.com/libs/firebaseui/1.0.0/firebaseui.css"/>
+    <script src="firebase.js"></script>
+
     <!-- Bootstrap CSS -->
     <link rel="stylesheet"
           href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css"
@@ -22,8 +30,9 @@
     <link rel="icon" type="image/png" href="image/pickle.png">
   </head>
   <body>
-    <div class="container" id="react">
-    </div>
+    <div id="firebaseui-auth-container"></div>
+    <div class="container" id="react"></div>
+
 
     <!-- jQuery first, then Tether, then Bootstrap JS. -->
     <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js"

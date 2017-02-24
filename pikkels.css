@@ -13,17 +13,15 @@ body {
 .division {
   font-size: 10pt;
 }
-.division td {
-  height: 22px;
+.division h2 {
+  height: 30px;
+  margin-top: 5px;
 }
 .division.BB-8 {
   background-color: #fa4;
 }
 .division.R2-D2 {
   background-color: #68f;
-}
-.division th {
-  font-weight: normal;
 }
 .division .wins, .division .losses {
   text-align: right;
@@ -32,7 +30,6 @@ body {
   margin: 0;
   padding: 0;
 }
-
 .day > div {
   padding: 2px 5px;
 }

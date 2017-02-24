@@ -1,6 +1,6 @@
-var DB = {
-  1: {name: "Providence Kickball", schedule: 22,
-      divisions: [2,3]},
+const DB = {
+  1: {name: "Providence Kickball", nick: 'PKL', year: 2016,
+      schedule: 22, divisions: [2,3]},
 
   2: {name: "R2-D2", teams: [ 4, 5, 6, 7, 8, 9,10,11,12]},
   3: {name: "BB-8", teams:  [13,14,15,16,17,18,19,20,21]},
@@ -27,38 +27,54 @@ var DB = {
 
   22: {calendar:
        {"May 14, 2016":
-        { "10AM": null, "11AM": null, "12PM": null, "1PM": null, "2PM": null, "3PM": null, "4PM": null, "5PM": null, "6PM": null},
-        "May 21, 2016": {"12PM": null, "1PM": null, "2PM": null, "3PM": null, "4PM": null, "5PM": null},
-        "Jun  4, 2016": {"12PM": null, "1PM": null, "2PM": null, "3PM": null, "4PM": null, "5PM": null},
-        "Jun 11, 2016": {"12PM": null, "1PM": null, "2PM": null, "3PM": null, "4PM": null, "5PM": null},
-        "Jun 18, 2016": {"12PM": null, "1PM": null, "2PM": null, "3PM": null, "4PM": null, "5PM": null},
-        "Jun 25, 2016": {"12PM": null, "1PM": null, "2PM": null, "3PM": null, "4PM": null, "5PM": null},
-        "Jul 16, 2016": {"12PM": null, "1PM": null, "2PM": null, "3PM": null, "4PM": null, "5PM": null},
-        "Jul 23, 2016": {"12PM": null, "1PM": null, "2PM": null, "3PM": null, "4PM": null, "5PM": null},
-        "Jul 30, 2016": {"12PM": null, "1PM": null, "2PM": null, "3PM": null, "4PM": null, "5PM": null},
-        "Aug  6, 2016": {"12PM": null, "1PM": null, "2PM": null, "3PM": null, "4PM": null, "5PM": null},
-        "Aug 13, 2016": {"12PM": null, "1PM": null, "2PM": null, "3PM": null, "4PM": null, "5PM": null},
-        "Aug 20, 2016": {"12PM": null, "1PM": null, "2PM": null, "3PM": null, "4PM": null, "5PM": null},
-        "Aug 27, 2016": {"12PM": null, "1PM": null, "2PM": null, "3PM": null, "4PM": null, "5PM": null},
+        { "10AM": 0, "11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0, "6PM": 0},
+        "May 21, 2016": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+        "Jun  4, 2016": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+        "Jun 11, 2016": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+        "Jun 18, 2016": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+        "Jun 25, 2016": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+        "Jul 16, 2016": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+        "Jul 23, 2016": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+        "Jul 30, 2016": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+        "Aug  6, 2016": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+        "Aug 13, 2016": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+        "Aug 20, 2016": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+        "Aug 27, 2016": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
        }},
 };
 
+
 class League {
-  constructor(id, db) {
+  constructor(id) {
     this.id = id;
     this.unsatisfied = [];
   }
 
   hydrate(id, db) {
-    var json = db[id];
+    const json = db[id];
     this.name = json.name;
     this.nick = this.name;
     if ('nick' in json) this.nick = json.nick;
+    this.year = json.year;
 
     this.divisions = json.divisions.map(id => hydrate(Division, id, db));
-
     this.schedule = new Schedule(json.schedule, db);
     this.matchups = this.allMatchups();
+  }
+
+  dehydrate(db) {
+    const id = this.id;
+    if (db[id])
+      return id;
+    db[id] = {
+      name: this.name
+    }
+    if (this.nick != this.name)
+      db[id].nick = this.nick;
+    db[id].year = this.year;
+    db[id].divisions = this.divisions.map(div => div.dehydrate(db));
+    db[id].schedule = this.schedule.dehydrate(db);
+    return id;
   }
 
   allMatchups() {
@@ -66,22 +82,53 @@ class League {
     // TODO: What happens if divisions not same size?
     var matchups = _.flatten(_.zip.apply(undefined,
                                          (_.map(this.divisions, 'matchups'))));
-
-    // PKL specific: If divisions have an odd number, we need to add
-    // interleague games so that we can schedule everyone on opening day.
-    var divsize = this.divisions[0].teams.length;
-    if (this.divisions.length == 2 && divsize % 2 == 1) {
-      var interleague = _.zip.apply(undefined, (_.map(this.divisions, 'teams')));
-      for (var i = 0; i < interleague.length; i++) {
-        matchups.splice(6+i*divsize, 0, interleague[i]);
-      }
-    }
+    this.addInterdivisional(matchups);
     return matchups;
   }
 
+  find(name) {
+    for (const div of this.divisions)
+      for (const team of div.teams) {
+        if (team.name === name || team.nick === name)
+          return team;
+      }
+    console.log("Can't find", name);
+    return null;
+  }
+  vs(name1, name2) {
+    return [this.find(name1), this.find(name2)];
+  }
+
+  addInterdivisional(matchups) {
+    // PKL specific: If divisions have an odd number of teams, we need
+    // to add interleague games so that we can schedule everyone on
+    // opening day.
+    const divsize = this.divisions[0].teams.length;
+    if (this.divisions.length == 2 && divsize % 2 == 1) {
+      let interleague = _.zip.apply(undefined, (_.map(this.divisions, 'teams')));
+      if (this.year == 2016 && this.nick == 'PKL') {
+        interleague = [
+          this.vs('Equipped','Stilettos'),
+          this.vs('Unstoppaballs', 'Olympic'),
+          this.vs('Ball is Life', 'Chilangos'),
+          this.vs('Meat Sweats', 'McBallface'),
+          this.vs('Muscle Cobra', 'Marios'),
+          this.vs('Next Tues', 'Baywatch'),
+          this.vs('Jedi Mind Kicks', 'Glamazons'),
+          this.vs('Wolfpack','GFY'),
+          this.vs('99 Probz','Ball 12')
+        ];
+      }
+      for (let i = 0; i < interleague.length; i++) {
+        matchups.splice(6+i*divsize, 0, interleague[i]);
+      }
+    }
+  }
+
+
   reschedule() {
     this.clearGames();
-    var unsatisfied = this.unscheduled(this.matchups);
+    const unsatisfied = this.unscheduled(this.matchups);
     this.matchups = _.shuffle(this.matchups); // For next reschedule
     this.schedule.fillFrom(unsatisfied);
     this.unsatisfied = unsatisfied;
@@ -93,13 +140,13 @@ class League {
     // and removes games from the clone if they are on the schedule.
     // Perhaps clearer to filter the matchups with a test to see if
     // the game is on the schedule already?
-    var unsatisfied = _.clone(matchups);
+    const unsatisfied = _.clone(matchups);
     // CHANGE
     _.each(this.schedule.calendar, (slots, date) => {
       _.each(slots, (game, time) => {
         if (!game)
           return;
-        for (var i in unsatisfied) {
+        for (const i in unsatisfied) {
           if (game.satisfies(unsatisfied[i])) {
             unsatisfied.splice(i,1);   // remove it
             return;
@@ -111,8 +158,8 @@ class League {
   }
 
   clearGames() {
-    for (var div of this.divisions) {
-      for (var team of div.teams) {
+    for (const div of this.divisions) {
+      for (const team of div.teams) {
         team.games =  _.filter(team.games, game => game.pinned);
       }
     }
@@ -126,18 +173,31 @@ class Division {
   }
 
   hydrate(id, db) {
-    var json = db[id];
+    const json = db[id];
     this.name = json.name;
     this.nick = this.name;
     if ('nick' in json) this.nick = json.nick;
 
     this.teams = json.teams.map(id => {
-      var team = hydrate(Team, id, db);
+      const team = hydrate(Team, id, db);
       team.division = this;
       return team;
     });
 
     this.matchups = roundRobin(this.teams);
+  }
+
+  dehydrate(db) {
+    const id = this.id;
+    if (db[id])
+      return id;
+    db[id] = {
+      name: this.name
+    }
+    if (this.nick != this.name)
+      db[id].nick = this.nick;
+    db[id].teams = this.teams.map(team => team.dehydrate(db));
+    return id;
   }
 }
 
@@ -155,13 +215,13 @@ function roundRobin(teams) {
     copy.push(undefined);       // Whoever plays 'undefined' has a bye.
   }
 
-  var matchups = [];
-  for (var round = 0; round < copy.length-1; round++) {
-    for (var i = 0; i < copy.length/2; i++) {
-      var a = copy[i];
+  const matchups = [];
+  for (let round = 0; round < copy.length-1; round++) {
+    for (let i = 0; i < copy.length/2; i++) {
+      const a = copy[i];
       if (a === undefined)
         continue;
-      var b = copy[copy.length-1-i];
+      const b = copy[copy.length-1-i];
       if (b === undefined)
         continue;
       matchups.push(round % 2 ? [a, b] : [b, a]);
@@ -172,20 +232,23 @@ function roundRobin(teams) {
 }
 
 function hydrate(cls, id, db) {
-  if (! cls.catalog) {
-    cls.catalog = {};
-  }
-  if (id in cls.catalog) {
-    return cls.catalog[id];
-  }
+  if (id == null || id == 0)
+    return null;
+  if (id in hydrate.CATALOG)
+    return hydrate.CATALOG[id];
+
   if (! id in db) {
-    console.log(cls, id, " not in DB");
+    console.log(cls, id, " not in database.");
   }
-  var obj = new cls(id);
-  cls.catalog[id] = obj;
+  const obj = new cls(id);
+  hydrate.CATALOG[id] = obj;
   obj.hydrate(id, db);
   return obj;
 }
+function flush(id) {
+  delete hydrate.CATALOG[id];
+}
+hydrate.CATALOG = {};
 hydrate.ID = _.max(_.keys(DB).map(_.parseInt))+1;
 
 class Team {
@@ -194,7 +257,7 @@ class Team {
   }
 
   hydrate(id, db) {
-    var json = db[id];
+    const json = db[id];
     this.name = json.name;
     this.nick = this.name;
     if ('nick' in json) this.nick = json.nick;
@@ -207,6 +270,20 @@ class Team {
     if ('exclude' in json) this.exclude = json.exclude;
   }
 
+  dehydrate(db) {
+    const id = this.id;
+    if (db[id])
+      return id;
+    db[id] = {
+      name: this.name
+    }
+    if (this.nick != this.name)
+      db[id].nick = this.nick;
+    db[id].games = this.games.map(game => game.dehydrate(db));
+    return id;
+  }
+
+
   wins() {
     return _.filter(this.games, game => game.winner && game.winner === this).length;
   }
@@ -216,9 +293,9 @@ class Team {
   }
 
   rank() {
-    var w = this.wins();
-    var l = this.losses();
-    var pct =  (w + l == 0) ? 0.5 : w / (w + l);
+    const w = this.wins();
+    const l = this.losses();
+    const pct =  (w + l == 0) ? 0.5 : w / (w + l);
     return  (w-l) + pct;
   }
 
@@ -236,32 +313,44 @@ class Team {
 class Schedule {
   constructor(id, db) {
     this.id = id;
-    var json = db[id];
+    const json = db[id];
 
-    // CHANGE
-    var calendar = {};
-    _.each(json.calendar, function (slots, date) {
-      calendar[date] = _.mapValues(slots, function(game) {
+    this.calendar = _.mapValues(json.calendar, (slots, date) => {
+      return _.mapValues(slots, game => {
         return game ? hydrate(Game, game, db) : null;
       });
     });
-    this.calendar = calendar;
+  }
+
+  dehydrate(db) {
+    const id = this.id;
+    if (db[id])
+      return id;
+
+    const calendar = _.mapValues(this.calendar, (slots, date) => {
+      return _.mapValues(slots, (game, slot) => {
+        return game ? game.dehydrate(db) : 0;
+      })
+    });
+
+    db[id] = {
+      calendar: calendar
+    };
+    return id;
   }
 
   swap(g1, g2) {
-    console.log("swap", g1, g2);
-    var [d1, t1] = this.find(g1);
-    var [d2, t2] = this.find(g2);
+    const [d1, t1] = this.find(g1);
+    const [d2, t2] = this.find(g2);
     // CHANGE
     this.calendar[d1][t1] = g2
     this.calendar[d2][t2] = g1;
   }
 
   find(game) {
-    // CHANGE
-    for (var date of Object.keys(this.calendar)) {
-      var times = this.calendar[date];
-      for (var time of Object.keys(times)) {
+    for (const date of Object.keys(this.calendar)) {
+      const times = this.calendar[date];
+      for (const time of Object.keys(times)) {
         if (game === times[time])
           return [date, time];
       };
@@ -271,15 +360,12 @@ class Schedule {
   }
 
 
-  clear(matchups) {
-    // CHANGE
-    var calendar = {};
-    _.each(this.calendar, function (slots, date) {
-      calendar[date] = _.mapValues(slots, function(game) {
-        return game && game.pinned ? game : null;
-      });
+  clear() {
+    this.calendar = _.mapValues(this.calendar, (slots, date) => {
+      return _.mapValues(slots, (game, slot) => {
+        return game && game.pinned ? game : 0;
+      })
     });
-    this.calendar = calendar;
   }
 
   fillFrom(matchups) {
@@ -311,15 +397,15 @@ class Schedule {
         if (!candidate || candidate.pinned) return false;
         _.each(matchups, (leftover, li) => {
           if (this.isViable(leftover, date, slot, slots)) {
-            for (var i = 0; i < unused.length; i++) {
-              var [uud, uut] = unused[i];
-              var others = this.calendar[uud]
+            for (let i = 0; i < unused.length; i++) {
+              const [uud, uut] = unused[i];
+              const others = this.calendar[uud]
               if (this.isViable(candidate.matchup, uud, uut, others)) {
                 this.calendar[uud][uut] = candidate;
                 this.calendar[date][slot] = new Game(leftover);
                 matchups.splice(li, 1); // remove
-                unused.splice(i, 1); // remove
-                return false;         // Move on through calendar
+                unused.splice(i, 1);    // remove
+                return false;           // Move on through calendar
               }
             }
           }
@@ -335,7 +421,7 @@ class Schedule {
       return false;
     }
     // Skip if either team already plays in a game that day.
-    return _.every(scheduled, function(game, slot) {
+    return _.every(scheduled, (game, slot) => {
       if (game) {
         if (game.involves(matchup[0]) || game.involves(matchup[1])) {
           return false;
@@ -346,8 +432,8 @@ class Schedule {
   }
 
   extractViable(matchups, date, slot, scheduled) {
-    for (var m = 0; m < matchups.length; m++) {
-      var matchup = matchups[m];
+    for (let m = 0; m < matchups.length; m++) {
+      const matchup = matchups[m];
       if (this.isViable(matchup, date, slot, scheduled)) {
         matchups.splice(m,1);
         return matchup;
@@ -358,20 +444,19 @@ class Schedule {
 }
 
 class Game {
-  constructor(id) {
-    if (typeof id == "number") {
-      this.id = id;
+  constructor(arg) {
+    if (typeof arg == "number") {
+      this.id = arg;
     } else {
-      var matchup = id;
+      this.matchup = arg;
       this.id = hydrate.ID++;
-      this.matchup = matchup;
       this.tellTeams();
     }
     this.pinned = false;
   }
 
   hydrate (id, db) {
-    var json = db[id];
+    const json = db[id];
     this.matchup = _.map(json.matchup, t => hydrate(Team, t, db));
     this.tellTeams();
     if ('winner' in json)
@@ -386,9 +471,24 @@ class Game {
         this.winner = this.matchup[1];
       }
     }
-    this.score = json.score;
-    this.pinned = true;
+    this.pinned = !!json.pinned;
   }
+
+  dehydrate(db) {
+    const id = this.id;
+    if (db[id])
+      return id;
+    db[id] = {
+      matchup: this.matchup.map(team => team.dehydrate(db)),
+      winner: this.winner ? this.winner.dehydrate(db) : null,
+      pinned: this.pinned,
+    }
+    if ('score' in this)
+      db[id].score = this.score;
+
+    return id;
+  }
+
 
   tellTeams() {
     this.matchup.forEach(team => team.noteGame(this));
@@ -405,12 +505,36 @@ class Game {
 }
 
 
-var LeaguePage = React.createClass({
-  getInitialState() {
-    return {
+class LeaguePage extends React.Component {
+  constructor(props) {
+    super(props);
+    var user = this.props.user;
+    this.state = {
+      db: DB,
       league: hydrate(League, this.props.id, DB),
     };
-  },
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        // Load user's league from FireBase
+        var key = '/user/' + user.uid +'/db';
+        firebase.database().ref('/user/' + user.uid +'/db')
+          .on('value', db => {
+            db = db.val();
+            if (db) {           // Avoid overwriting local info on first login.
+              // TODO, find safe way for existing objects to maintain references
+              for (const id of Object.keys(db)) {
+                flush(id);
+              }
+              this.setState({
+                db: db,
+                league: hydrate(League, this.props.id, db),
+              });
+            }
+          });
+      }
+    });
+  }
+
   handleReschedule(e) {
     e.preventDefault();
     var start = performance.now();
@@ -420,37 +544,44 @@ var LeaguePage = React.createClass({
       if (done)
         break;
       now = performance.now();
-      console.log("Failed attempt took ",now-start,"ms");
+      console.log("Failed attempt. Used ",now-start,"ms so far.");
     } while (now - start < 100.0); // Work for up to 100ms
+    var newDB = {}
+    this.state.league.dehydrate(newDB);
+    console.log(newDB);
     this.forceUpdate();
+    var user = firebase.auth().currentUser;
+    if (user) {
+      var key = '/user/' + user.uid +'/db';
+      firebase.database().ref(key).set(newDB);
+    }
     // TODO: If we fail, it would be nice to use the "best" schedule we found.
-  },
-  render() {
-    var league = this.state.league;
+  }
 
+  render() {
+    const league = this.state.league;
+    
     return (<div className="league">
-              <h1>{league.name}</h1>
+              <h1>{league.name} {league.year}</h1>
               <Divisions league={league}/>
               <Unsatisfied league={league}/>
-              <form onSubmit={this.handleReschedule}>
+              <form onSubmit={(e) => this.handleReschedule(e)}>
                 <input type="submit" value="Reschedule" />
               </form>
               <Calendar schedule={league.schedule} onUpdate={this.forceUpdate.bind(this)}/>
             </div>
            );
   }
-});
+}
 
-var Divisions = React.createClass({
-  render: function() {
-    var divisions = this.props.league.divisions
-      .map(division => <TeamList key={division.id} division={division}/>);
+const Divisions = ({league}) => {
+  const divisions = league.divisions
+    .map(division => <TeamList key={division.id} division={division}/>);
 
-    return <div className="standings row"> {divisions} </div>;
-  }
-});
+  return <div className="standings row"> {divisions} </div>;
+}
 
-var TeamList = React.createClass({
+const TeamList = React.createClass({
   getInitialState: function() {
     return {
       editing: 0
@@ -459,65 +590,69 @@ var TeamList = React.createClass({
   edit: function(id) {
     this.setState({editing: id});
   },
-  handleKeyDown: function(event) {
+  handleKeyDown: function(event, named) {
     if (event.keyCode === 13) {
-      DB[this.state.editing].name = event.target.value;
-      Team.catalog[this.state.editing].name = event.target.value;
+      named.name = event.target.value;
       event.target.blur();
     }
     if (event.keyCode === 27) {
       event.target.blur();
     }
   },
+  renderHead: function() {
+    const division = this.props.division;
+    if (this.state.editing === this.props.division.id) {
+      return <input type="text" autoFocus
+                    size="30"
+                    onKeyDown={(e) => this.handleKeyDown(e, division)}
+                    onBlur={() => this.edit(0)}
+                    defaultValue={division.name}/>;
+    } else {
+      return <div onClick={() => this.edit(division.id)}>{division.name} Division</div>
+    }
+  },
   renderTeam: function(team) {
-    if ( this.state.editing === team.id ) {
-      return <tr key={team.id}>
-              <td colSpan="3">
+    if (this.state.editing === team.id) {
+      return <div className="row" key={team.id}>
+              <div className="col-8">
                 <input type="text" autoFocus
                        size="42"
-                       onKeyDown={this.handleKeyDown}
-                       onBlur={_.partial(this.edit,0)}
+                       onKeyDown={(e) => this.handleKeyDown(e, team)}
+                       onBlur={() => this.edit(0)}
                        defaultValue={team.name}/>
-              </td>
-             </tr>;
+              </div>
+             </div>;
     } else {
-      return <TeamLine onClick={_.partial(this.edit,team.id)} key={team.id} team={team}/>;
+      return <TeamLine onClick={() => this.edit(team.id)} key={team.id} team={team}/>;
     }
   },
   render: function() {
-    var division = this.props.division;
-    var lines = division.teams
+    const division = this.props.division;
+    const lines = division.teams
       .sort((a, b) => b.rank() - a.rank())
       .map(team => this.renderTeam(team));
 
     return (<div className={division.nick + " division col-md"}>
-              <h2>{division.name} Division</h2>
-              <table>
-                <tbody>
-                  <tr><th>&nbsp;</th><th>Wins</th><th>Losses</th></tr>
-                  {lines}
-                </tbody>
-              </table>
+              <h2>{this.renderHead()}</h2>
+              <div className="row">
+                <div className="col-8"></div>
+                <div className="col">Wins</div>
+                <div className="col">Losses</div>
+              </div>
+              {lines}
             </div>
     );
   }
 });
 
-var TeamLine = React.createClass({
-  render: function() {
-    var team = this.props.team
-    return (<tr className="team">
-              <td onClick={this.props.onClick}>{team.name}</td>
-              <td className="wins">{team.wins()}</td>
-              <td className="losses">{team.losses()}</td>
-            </tr>
-    );
-  }
-});
+const TeamLine = ({team, onClick}) =>
+  <div className="row team">
+    <div className="col-8" onClick={onClick}>{team.name}</div>
+    <div className="col wins">{team.wins()}</div>
+    <div className="col losses">{team.losses()}</div>
+  </div>
 
-var Unsatisfied = React.createClass({
-  render: function() {
-    var league = this.props.league;
+const Unsatisfied = ({league}) => {
     var unscheduled = league.unsatisfied
       .map(matchup =>
            <li key={matchup[0].id+"-"+matchup[1].id}>{matchup[0].nick} <i>vs</i> {matchup[1].nick}</li>);
@@ -529,8 +664,7 @@ var Unsatisfied = React.createClass({
               {unscheduled}
             </ol>
             </div>);
-  }
-});
+}
 
 var Calendar = React.createClass({
   getInitialState: function() {
@@ -556,9 +690,10 @@ var Calendar = React.createClass({
   render: function() {
     var calendar = this.props.schedule.calendar;
     var dates = _.sortBy(Object.keys(calendar), Date.parse);
-    var headings = _.sortBy(Object.keys(calendar[dates[0]]),
-                            time => moment(dates[0] + " " + time,
-                                           "MMM DD, YYYY hha"));
+    var firstDate = dates[0];
+    var allTimes = _.uniq(_.flatMap(calendar, slots => Object.keys(slots)));
+    var headings = _.sortBy(allTimes, time => moment(dates[0] + " " + time,
+                                                     "MMM DD, YYYY hha"));
     var days = dates
       .map(date =>
            <Day key={date} date={date} slots={calendar[date]} headings={headings}
@@ -569,7 +704,7 @@ var Calendar = React.createClass({
     return (<div className="schedule">
               <h2>Schedule</h2>
                 <div className="row hidden-lg-down">
-                    <div className="col">Saturday</div>
+                    <div className="col"></div>
                     {headings.map(h => <div key={h} className="col time">{h}</div>)}
                 </div>
                 {days}
@@ -578,40 +713,34 @@ var Calendar = React.createClass({
   }
 });
 
-var Day = React.createClass({
-  render: function() {
-    var date = this.props.date;
-    var slots = this.props.slots;
-    var headings = this.props.headings;
-    var boxes = [];
-    for (var heading of headings) {
-      if (heading in slots && slots[heading]) {
-        boxes.push(<GameBox key={slots[heading].id}
-                            game={slots[heading]}
-                            time={heading}
-                            setTarget={this.props.setTarget}
-                            target={this.props.target}
-                            onUpdate={this.props.onUpdate}/>);
-      } else {
-        boxes.push(<div className="game hidden-lg-down col-xl" key={date + heading}>&nbsp;</div>);
-      }
-    };
-    return (<div className="row day">
-              <div className="col-xl">
-                {moment(this.props.date, "MMM DD, YYYY").format("MMM D")}
-              </div>
-              {boxes}
-            </div>
-    );
+const Day = ({date, slots, headings, target, setTarget, onUpdate}) => {
+  var boxes = [];
+  for (var heading of headings) {
+    if (heading in slots && slots[heading]) {
+      boxes.push(<GameBox key={slots[heading].id}
+                          game={slots[heading]}
+                          time={heading}
+                          target={target}
+                          setTarget={setTarget}
+                          onUpdate={onUpdate}/>);
+    } else {
+      boxes.push(<div className="game hidden-lg-down col-xl" key={date + heading}>&nbsp;</div>);
+    }
   }
-});
+  return (<div className="row day">
+            <div className="col-xl">
+              {moment(date, "MMM DD, YYYY").format("MMM D")}
+            </div>
+            {boxes}
+          </div>);
+}
 
 var GameBox = React.createClass({
-  moveClick: function (ev) {
+  moveClick: function () {
     this.props.setTarget(this.props.game);
   },
 
-  teamClick: function(i, ev) {
+  teamClick: function(i) {
     var game = this.props.game;
     if (game.winner == game.matchup[i])
       game.winner = null
@@ -620,8 +749,7 @@ var GameBox = React.createClass({
     this.props.onUpdate();
   },
   render: function() {
-    var game = this.props.game;
-    var time = this.props.time;
+    var {game, time} = this.props;
     var gameClass = game.matchup[0].division.nick;
     if (game.matchup[0].division !== game.matchup[1].division) {
       gameClass = "inter";
@@ -644,30 +772,28 @@ var GameBox = React.createClass({
   }
 });
 
-var GameControl = React.createClass({
-  togglePin: function (game) {
+class GameControl extends React.Component {
+  togglePin(game) {
     game.pinned = !game.pinned;
     this.forceUpdate();
-  },
+  }
 
-  render: function() {
-    var game = this.props.game;
-    var time = this.props.time;
-    var target = this.props.target;
-    var moveClick = this.props.moveClick;
+  render() {
+    var {game, time, target, moveClick} = this.props;
+    var timeOrScore = game.score ? game.score[0]+"-"+game.score[1] : time;
     return <div>
       <span className={game == target ? "moving" : "prepmove"}
             onClick={moveClick}>
         <img width="20" src="image/move.png"/>
       </span>
       <span className={game.pinned ? "pinned" : "unpinned"}
-            onClick={_.partial(this.togglePin, game)}>
+            onClick={() => this.togglePin(game)}>
         <img width="20" src="image/pin.png"/>
       </span>
-      <span className="float-right text-muted hidden-xl-up">{time}</span>
+      <span className="float-right text-muted hidden-xl-up">{timeOrScore}</span>
       </div>
   }
-});
+}
 
-ReactDOM.render(<LeaguePage id={1}/>,
-                document.getElementById('react'));
+var reactDiv = document.getElementById('react');
+ReactDOM.render(<LeaguePage id={1}/>, reactDiv);
