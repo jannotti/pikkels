@@ -5,7 +5,7 @@
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
-#react {
+#root {
   width: 80%;
   margin: auto;
 }
@@ -17,10 +17,10 @@ body {
   height: 30px;
   margin-top: 5px;
 }
-.division.BB-8 {
+.division.bb-8 {
   background-color: #fa4;
 }
-.division.R2-D2 {
+.division.r2-d2 {
   background-color: #68f;
 }
 .division .wins, .division .losses {
@@ -36,14 +36,20 @@ body {
 .game {
   font-size: smaller;
 }
+.game.available {
+  background-color: #888;
+}
 .game.inter {
   background-color: #9ef;
 }
-.game.BB-8 {
+.game.bb-8 {
   background-color: #fa4;
 }
-.game.R2-D2 {
+.game.r2-d2 {
   background-color: #68f;
+}
+.hates {
+  background-color: red;
 }
 .game .gameControl {
   display: none;
@@ -51,11 +57,17 @@ body {
 .game:hover .gameControl {
   display: block;
 }
+.game .unpinned:hover {
+  opacity: 0.4;
+}
 .game .unpinned {
-  opacity: 0.2;
+  opacity: 0.0;
+}
+.game .prepmove:hover {
+  opacity: 0.4;
 }
 .game .prepmove {
-  opacity: 0.2;
+  opacity: 0.0;
 }
 .winner {
   background-color: #66ccff;
@@ -69,4 +81,8 @@ body {
 }
 .day {
   background-color: #D56C5A;
+}
+.full {
+  width: 100%;
+  height: 100%;
 }
