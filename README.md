@@ -1,51 +1,12 @@
 # pikkels
 Providence Kickball League Scheduler
 
-## TODO
-- UI to remove specific games from schedule.
-- Show unscheduled games nicely.
-- Allow unscheduled games to be put in schedule by hand.
+## Notes for 2018
+- Ask teams for exceptions, make them define "early" and "late"
+- Set a deadline for exceptions
+- Consider championship rematch
 
-## Scheduling exceptions
-- Baywatch / Muscle Cobra separate
-- Baywatch - 6/17, 7/1, 7/29
-- Trailer Park Problems - 5/27, Avoid late
-- Ball 12 - 6/10, Avoid early
-- Marios - 6/24
-- Glamazons - 6/3, Avoid early
-- Stilettos - 7/22, 9/2
-- Stilettos play Meat Sweats
-- Rangers avoid 3pm or later
-- MC avoids Baywatch
-- Avoid loser's cup, championship rematches?
-- Clams June 3
-
-## MC exceptions
--    5/27 6/3                      7/15           8/5  8/12
-- Dan         6/10  6/17
-- Jason                  6/24
-- Jeff B                      7/1       7/22 7/29           8/19 8/26 9/2
-- Jeff D                                     7/29                             9/16
-- Jillian                                                                 9/9 9/16
-- Jon                                   7/22 7/29
-- JJ 5/27           6/17 6/24      7/15 7/22                8/19?
-
-## Dates
-- May 27
-- Jun  3
-- Jun 10
-- Jun 17
-- Jun 24
-- Jul 15
-- Jul 22
-- Jul 29
-- Aug  5
-- Aug 12
-- Aug 19
-- Aug 26
-- Sep 2
-
-## 2017 Ranks
+## 2016 Records
 -Muscle Cobra   11	1
 -The Wolfpack	9	2
 -Meat Sweats	7	3
@@ -63,3 +24,32 @@ Providence Kickball League Scheduler
 -New team       1       8
 -Jedi	        1	9
 -Clams Casino	0      10
+
+## 2017 Records
+-Muscle Cobra, Inc. (401PKL)   12	1
+-Ball is Life	                9	4
+-Dexter Park Rangers	        9	3
+-The Unstoppaballs	        8	4
+-Trippin’ Marios	        7	5
+-Meat Sweats	                7	5
+-Ball 12 For Action	        6	5
+-#GFY	                        6	5
+-Chili Equipped	                6	5
+-Narragansett Baywatch	        6	5
+-Jedi Mind Kicks	        5	5
+-Trailer Park Problems	        5	5
+-Fox Point Booters	        4	6
+-The Wolfpack	                4	6
+-The Stilettos	                4	6
+-Bad Taste	                3	7
+-The Glamazons	                1	9
+-The Lazy Progressives	        1	9
+-C U Next Tuesday: Clams Casino	0	10
+
+
+## New scheduling process
+- insert all, at random (randomize button)
+-- complain if too few slots
+- for each "bad" game, find swaps until all happy
+-- look through other bad games first?
+- at end of schedule, all games in calendar!

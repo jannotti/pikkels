@@ -1,28 +1,25 @@
 {
-  "name": "pikkels",
-  "homepage": "https://www.jannotti.com/~jj/pikkels/",
-  "version": "0.1.0",
+  "name": "pikkels-server",
+  "version": "0.0.1",
   "private": true,
-  "devDependencies": {
-    "react-scripts": "0.9.0"
-  },
   "dependencies": {
-    "bootstrap": "^4.0.0-alpha.6",
-    "classnames": "^2.2.5",
-    "firebase": "^3.6.10",
-    "firebaseui": "^1.0.0",
-    "lodash": "^4.17.4",
-    "material-ui": "^0.17.0",
-    "moment": "^2.17.1",
-    "react": "^15.4.2",
-    "react-dom": "^15.4.2",
-    "react-tap-event-plugin": "^2.0.1"
+    "express": "4.13.3",
+    "sequelize": "^4.37.6",
+    "sqlite3": "^4.0.0"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "deploy": "npm run build && scp -r build/* www.jannotti.com:www/pikkels",
-    "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject"
+    "start": "concurrently 'npm run server' 'npm run client'",
+    "server": "node server.js",
+    "client": "node start-client.js",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "babel-eslint": "^8.2.3",
+    "concurrently": "3.1.0",
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb": "14.1.0",
+    "eslint-plugin-import": "2.2.0",
+    "eslint-plugin-jsx-a11y": "4.0.0",
+    "eslint-plugin-react": "6.9.0"
   }
 }

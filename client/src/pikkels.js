@@ -1,13 +1,11 @@
 /* eslint-disable no-labels, no-use-before-define */
 
-import React, { Component, PropTypes } from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 
 import _ from 'lodash';
 import moment from 'moment';
-import cx from 'classnames';
-
-import injectTapEventPlugin from 'react-tap-event-plugin';
-injectTapEventPlugin();
+//import cx from 'classnames';
 
 import Chip from 'material-ui/Chip';
 import Menu from 'material-ui/Menu';
@@ -32,7 +30,6 @@ firebase.initializeApp({
 });
 
 
-
 import * as firebaseui from 'firebaseui'
 import 'firebaseui/dist/firebaseui.css';
 const uiConfig = {
@@ -49,55 +46,55 @@ const uiConfig = {
 
 const DB = {
   leagues: [1],
-  1: {name: "Providence Kickball", nick: 'PKL', year: 2017,
+  1: {name: "Providence Kickball", nick: 'PKL', year: 2018,
       schedule: 22, divisions: [2]},
 
-  2: {name: "United America", gpt: 10, ensure: [[5,16],[3,4],[5,6],[7,8],[20,21],[18,19]], avoid: [[3,9],[3,20],[3,21],[4,20],[4,21],[5,21]],
+  2: {name: "United", gpt: 10, ensure: [[5,16],[3,4],[5,6],[7,8],[20,21],[18,19]], avoid: [[3,9],[3,20],[3,21],[4,20],[4,21],[5,21]],
       teams: [3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]},
 
   3: {name: "Muscle Cobra, Inc.", nick: "Muscle Cobra",
-      exclude: ["11AM", "12PM", "1PM", "Jun 17", "Jun 24", "Jul 22", "Jul 29"]},
+      exclude: ["11AM", "12PM", "1PM",
+                "Jul 7", "Jul 14", "Jul 22", "Jul 28"]},
   4: {name: "The Wolfpack", nick: "Wolfpack"},
-  5: {name: "Meat Sweats"},
+  5: {name: "Meat Sweats", exclude: ["Aug 11"]},
   6: {name: "Ball is Life"},
-  7: {name: "Unstoppaballs", exclude: ["Jun 24"]},
-  8: {name: "Ball 12 For Action", nick: "Ball 12",
-      exclude: ["Jun 10", "11AM", "12PM"]},
-  9: {name: "Narragansett Baywatch", nick: "Baywatch",
-      exclude: ["Jun 17", "Jul 1", "Jul 29"]},
-  10: {name: "Dexter Park Rangers", nick: "Rangers", exclude: ["3PM", "4PM", "5PM", "6PM"]},
-  11: {name: "Trailer Park Problems", nick: "TPP",
-       exclude: ["May 27", "5PM", "6PM"]},
-  12: {name: "Trippin' Marios", nick: "Marios", exclude: ["Jun 24"]},
+  // For unstoppaballs, Jun 2 and Sep 25 is ok if 12pm or 1pm game
+  7: {name: "Unstoppaballs", exclude: ["May 26", "Jun 2", "Aug 21", "Sep 25"]},
+  8: {name: "Ball 12 For Action", nick: "Ball 12", exclude: ["Jul 29"] },
+  9: {name: "Narragansett Baywatch", nick: "Baywatch"},
+  10: {name: "Dexter Park Rangers", nick: "Rangers"},
+  11: {name: "Trailer Park Problems", nick: "TPP"},
+  12: {name: "Trippin' Marios", nick: "Marios"},
   13: {name: "GFY"},
-  14: {name: "Glamazons", exclude: ["Jun 3", "11AM", "12PM", "1PM"]},
+  14: {name: "Glamazons"},
   15: {name: "Los Equipped", nick: "Equipped"},
-  16: {name: "The Stilettos", nick: "Stilettos", exclude: ["Jul 22", "Sep 2"]},
-  17: {name: "Fox Point Booters", nick: "Fox Point", exclude: ["May 27", "Jun 10", "Jun 24"]},
+  16: {name: "The Stilettos", nick: "Stilettos"},
+  17: {name: "Fox Point Booters", nick: "Fox Point"},
   18: {name: "Bad Taste"},
   19: {name: "Lazy Progressives"},
-  20: {name: "Jedi Mind Kicks", exclude: ["Jul 15", "Jul 22", "Jul 29", "Aug 12"]},
+  20: {name: "Jedi Mind Kicks"},
   21: {name: "Clams Casino", nick: "Clams"},
 
   22: {
     leftover: [],
     calendar: {
-      "May 27": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0,
+      "May 26": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0,
                  "3PM": 0, "4PM": 0, "5PM": 0, "6PM": 0},
-      "Jun 3":  {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Jun 10": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Jun 17": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Jun 24": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Jul 1": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Jul 15": {"11AM": 0, "12PM": 0, "1PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Jul 22": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Jul 29": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Aug 5":  {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Aug 12": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Aug 19": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Aug 26": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Sep 2":  {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-       }},
+      "Jun 2":  {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+      "Jun 9": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+      "Jun 16": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+      "Jun 23": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+      "Jun 30": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+      "Jul 7": {"11AM": 0, "12PM": 0, "1PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+      "Jul 14": {"11AM": 0, "12PM": 0, "1PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+      "Jul 21": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+      "Jul 28": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+      "Aug 4":  {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+      "Aug 11": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+      "Aug 18": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+      "Aug 25": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+      "Sep 1":  {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+    }},
 };
 
 function slug(...strings) {
@@ -132,17 +129,6 @@ class Game {
       this.tellTeams(true);
     }
     this.pinned = false;
-  }
-
-  static of(matchup, pool) {
-    const i = pool.findIndex(game => game.matches(matchup));
-    console.log("of", i, pool);
-    if (i >= 0) {
-      const existing = pool[i];
-      pool.splice(i,1);   // remove it
-      return existing;
-    }
-    return new Game(matchup);
   }
 
   hydrate (id, db) {
@@ -244,14 +230,50 @@ class Schedule {
     return [count, filled];
   }
 
+  swap(...positions) {
+    const games = positions.map(p => this.calendar[p[0]][p[1]]);
+    const expected = games.length;
+    const dedupped = new Set(games);
+    if (dedupped.size !== expected)
+      return;                        // refuse
+    games.splice(0, 0, games.pop()); // rotate
+    positions.forEach((p,i) => this.calendar[p[0]][p[1]] = games[i]);
+  }
+  
   // Move the game at d1,t1 to d2,t2, and pin it.
   move([d1, t1], [d2, t2]) {
-    const tmp = this.calendar[d1][t1];
-    this.calendar[d1][t1] = this.calendar[d2][t2]
-    this.calendar[d2][t2] = tmp;
-    tmp.pinned = true;
+    this.swap([d1, t1], [d2, t2]);
+    const moved = this.calendar[d2][t2];
+    if (moved)
+      moved.pinned = true;
+  }
+  
+  trySwap(...positions) {
+    this.swap(...positions);
+    if (this.allGood(...positions))
+      return true;
+    this.swap(...positions.reverse());
+    return false;
   }
 
+  canSwap(...positions) {
+    this.swap(...positions);
+    const ok = this.allGood(...positions)
+    this.swap(...positions.reverse());
+    return ok;
+  }
+
+  allGood(...positions) {
+    return positions.every(p => this.good(p));
+  }
+  good([d, t]) {
+    const game = this.calendar[d][t];
+    if (!game)
+      return true;
+    return this.canPlace(game.matchup, d, t);
+  }
+  
+  
   find(matchup) {
     for (const [date, time, game] of this.games()) {
       if (game && game.satisfies(matchup))
@@ -262,15 +284,14 @@ class Schedule {
   }
 
   add(matchup) {
-    for (const [date, time, game] of this.games()) {
-      if (game)
+    const game = new Game(matchup);
+    for (const [date, time, existing] of this.games()) {
+      if (existing)
         continue;
-      if (this.canPlace(matchup, date, time)) {
-        this.calendar[date][time] = Game.of(matchup, []);
-        return true;
-      }
+      this.calendar[date][time] = game
+      return;
     }
-    return false;
+    this.calendar.leftover.push(game);
   }
 
   remove(matchup) {
@@ -302,8 +323,21 @@ class Schedule {
     // Gives all the dates used by this Schedule, sorted chronologically.
     return _.sortBy(Object.keys(this.calendar), Date.parse);
   }
-  openingDay() {
-    return _.minBy(Object.keys(this.calendar), Date.parse);
+  nextDate() {
+    // Returns next week after the last date used
+    const last = moment(Date.parse(this.dates().pop()))
+    const next = last.add(7, "days");
+    return next.format("MMM D");
+  }
+  nextTime() {
+    // Returns next time after the last time used
+    const last = moment(`June 14, 1974 ${this.times().pop()}`, "MMM DD, YYYY hha");
+    const next = last.add(1, "hour");
+    return next.format("ha").toUpperCase();
+  }
+
+  dayMoment(str) {
+    moment(str, "MMM DD, YYYY")
   }
 
   times() {
@@ -323,87 +357,48 @@ class Schedule {
     }
   }
 
-  
-  fillFrom(matchups, games) {
-    const opening = this.openingDay();
-    const unused = [];
-    // In this pass, just look for first viable matchup, and put it in.
-    // If nothing viable, note the problematic slot in 'unused'.
-    for (const [date, time, game, slots] of this.games()) {
-      if (!game) {            // games may already be there. (pinned)
-        var matchup = this.extractBest(matchups, date, time, 100);
-        if (matchup) {
-          slots[time] = Game.of(matchup, games);
-        } else {
-          if (opening === date) {
-            // Bail early, we can't fix it if we don't fill opening day.
-            return;
-          }
-          unused.push([date, time]);
+  fix() {
+    for (const [hdate, htime, hgame] of this.games()) {
+      if (!hgame || hgame.pinned || this.canPlace(hgame.matchup, hdate, htime))
+        continue;
+      // we have a hater!
+      CANDIDATES:
+      for (const [c1date, c1time, c1game] of this.games()) {
+        if (c1game === hgame || (c1game && c1game.pinned))
+          continue;
+        if (this.trySwap([hdate, htime], [c1date, c1time])) {
+          break;
         }
-      }
-    }
-
-    this.fixFrom(matchups, unused, games);
-    const onefix = matchups.length;
-    this.fixFrom(matchups, unused); // Would fixing again ever help?
-    const twofix = matchups.length;
-    if (onefix > twofix) {
-      alert(onefix + " > " + twofix);
-    }
-    return matchups;
-  }
-
-  fixFrom(matchups, unused, games) {
-    // Now run through again, and swap unpinned candidate games out of
-    // their existing slot if one of our leftovers can take their
-    // spot, and the candidate itself can be used to fill an 'unused'
-    // slot.
-    for (const [date, slots] of Object.entries(this.calendar)) {
-      // eslint-disable-next-line
-      CANDIDATE:
-      for (const [time, candidate] of Object.entries(slots)) {
-        if (!candidate || candidate.pinned)
-          continue;             // Next candidate for moving
-        for (let li = 0; li < matchups.length; li++) {
-          const leftover = matchups[li];
-          if (this.canPlace(leftover, date, time)) {
-            for (let i = 0; i < unused.length; i++) {
-              const [uud, uut] = unused[i];
-              if (this.canPlace(candidate.matchup, uud, uut)) {
-                this.calendar[uud][uut] = candidate;
-                this.calendar[date][time] = Game.of(leftover, games);
-                matchups.splice(li, 1); // remove the leftover
-                unused.splice(i, 1);    // remove the unused
-                if (unused.length === 0)
-                  return;
-                continue CANDIDATE;
-              }
-            }
+        if (!c1game)
+          continue;
+        for (const [c2date, c2time, c2game] of this.games()) {
+          if (c2game === hgame || c2game === c1game || (c2game && c2game.pinned))
+            continue;
+          const slots = [[hdate, htime], [c1date, c1time], [c2date, c2time]];
+          if (this.trySwap(...slots)) {
+            break CANDIDATES;
+          }
+          if (this.trySwap(...slots.reverse())) {
+            break CANDIDATES;
           }
         }
       }
     }
-    return matchups;
   }
 
   demerits(matchup, date, time) {
     let badness = 0;
     
-    // Skip if either team hates the spot, otherwise contribute the
-    // number of games the teams have played so far as "badness",
-    // which will lead to balanced in the schedule when filling in
-    // order.
+    // Skip if either team hates the spot.
     for (const team of matchup) {
       if (team.hates(date, time))
         badness += 100;
-      badness += team.games.length;
     }
 
     // Skip if either team already plays in a game that day.
     const others = this.calendar[date];
     const twoaday = !!_.find(others, (game, othertime) => {
-      if (game && time !== othertime) { // conflict with self: && game.matchup !== matchup
+      if (game && time !== othertime && game.matchup !== matchup) {
         for (const team of matchup) {
           if (game.involves(team))
             return true;
@@ -421,36 +416,20 @@ class Schedule {
     return this.demerits(matchup, date, time) < 100;
   }
   
-  
-  // Look through matchups for something that works for the date and
-  // slot (time).  If found, remove it from matchups and return it.
-  extractViable(matchups, date, slot) {
-    for (let m = 0; m < matchups.length; m++) {
-      const matchup = matchups[m];
-      if (this.canPlace(matchup, date, slot)) {
-        matchups.splice(m,1);
-        return matchup;
-      }
-    }
-    return null;
-  }
-
-  // Like extractViable, but checks all matchups and takes the best
-  // one.  But will not accept anything that scores about cutoff (if
-  // specified, and positive).
-  
-  extractBest(matchups, date, slot, cutoff=0) {
-    if (matchups.length === 0)
+  // Tries to find the best game for date & time, but will not
+  // accept anything that scores about cutoff (if specified, and
+  // positive).
+  extractBest(games, date, slot, cutoff=0) {
+    if (games.length === 0)
       return null;
-    const scores = matchups.map((matchup, i) =>
-                                [this.demerits(matchup, date, slot), i]);
-    console.log(scores);
+    const scores = games.map((g, i) =>
+                             [this.demerits(g.matchup, date, slot), i]);
     const best = _.minBy(scores, s => s[0]);
     if (cutoff > 0 && best[0] >= cutoff)
       return null;
-    const matchup = matchups[best[1]];
-    matchups.splice(best[1], 1);
-    return matchup;
+    const game = games[best[1]];
+    games.splice(best[1], 1);
+    return game;
   }
 
 }
@@ -503,6 +482,33 @@ class Division {
     if (this.nick)
       return this.nick;
     return this.name;
+  }
+
+  addTeam(team) {
+    if (team.division)
+      team.division.removeTeam(team);
+
+    const oldlen = this.teams.length
+    this.teams.push(team);
+    if (this.gpt % (oldlen-1) === 0)    // Was round-robin? Maintain.
+      this.gpt++;
+    else if (oldlen % 2 === 0 && this.gpt % 2 === 1)
+      this.gpt--;               // Can't have odd # of games in odd sized div.
+    team.division = this;
+  }
+
+  removeTeam(team) {
+    const oldlen = this.teams.length
+    console.log(this.teams, team);
+    const i = this.teams.findIndex(t => t === team);
+    if (i === -1)
+      return;
+    this.teams.splice(i, 1);
+    if (this.gpt % (oldlen-1) === 0)    // Was round-robin? Maintain.
+      this.gpt--;
+    else if (oldlen % 2 === 0 && this.gpt % 2 === 1)
+      this.gpt++;               // Can't have odd # of games in odd sized div.
+    team.division = null;
   }
 
   editName() {
@@ -705,62 +711,13 @@ class League {
     // so that we can schedule everyone on opening day.
     const divsize = this.divisions[0].teams.length;
     if (this.divisions.length === 2 && divsize % 2 === 1) {
-      if (this.year === 2016 && this.nick === 'PKL') {
-        return _.shuffle([
-          this.vs('Equipped','Stilettos'),
-          this.vs('Unstoppaballs', 'Olympic'),
-          this.vs('Ball is Life', 'Chilangos'),
-          this.vs('Meat Sweats', 'McBallface'),
-          this.vs('Muscle Cobra', 'Marios'),
-          this.vs('Next Tues', 'Baywatch'),
-          this.vs('Jedi Mind Kicks', 'Glamazons'),
-          this.vs('Wolfpack','GFY'),
-          this.vs('99 Probz','Ball 12')
-        ]);
-      }
       return _.shuffle(_.zip.apply(null, (this.divisions.map(d => d.teams))));
     }
     return [];
   }
 
-  reschedule() {
-    var games = this.clearGames();          // removes unpinned games
-    const unscheduled = this.unscheduled();
-    this.schedule.fillFrom(unscheduled, games);
-    this.schedule.leftover = unscheduled.map(m => Game.of(m, games));
-    // return unscheduled.length === 0;
-    const [, filled] = this.schedule.usage();
-    console.log(filled, this.gameCount());
-    return this.gameCount() === filled;
-  }
-
-
-  // Tries to schedule a matchup, but only if it fits somewhere available
-  trySchedule(matchup) {
-    return this.schedule.add(matchup);
-  }
-
   deschedule(matchup) {
     this.schedule.remove(matchup);
-  }
-
-  unscheduled() {
-    // As written iterates through calendar and removes matchups if
-    // they are on the schedule.  Perhaps clearer to filter the
-    // matchups with a test to see if the game is on the schedule
-    // already?
-    const unsatisfied = this.allMatchups();
-    for (const [ , , game] of this.schedule.games()) {
-      if (!game)
-        continue;
-      // Remove first matchup that game satisfies.
-      const i = unsatisfied.findIndex(m => game.satisfies(m));
-      if (i >= 0) {
-        unsatisfied.splice(i,1);   // remove it
-        continue;
-      }
-    }
-    return unsatisfied;
   }
 
   clearGames() {
@@ -796,8 +753,17 @@ hydrate.CATALOG = {};
 hydrate.ID = _.max(_.keys(DB).map(_.parseInt))+1;
 
 class Team {
-  constructor(id) {
-    this.id = id;
+  constructor(arg1, arg2) {
+    if (typeof arg === "number") {
+      this.id = arg1;
+    } else {
+      this.name = arg1;
+      if (arg2)
+        this.nick = arg2;
+      this.id = hydrate.ID++;
+    }
+    this.games = [];
+    this.exclude = [];
   }
 
   hydrate(id, db) {
@@ -877,7 +843,7 @@ class Team {
 
 const MODES = ["Schedule", "Play", "Display"];
 
-class LeaguePager extends Component {
+class LeaguePager extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -885,83 +851,48 @@ class LeaguePager extends Component {
       db: DB,
       league: hydrate(League, DB.leagues[0], DB),
       mode: 'Schedule',
-      dbref: firebase.database().ref(props.root)
     }
-    this.watch(this.state.dbref);
   }
-
-  componentWillReceiveProps(props) {
-    this.state.dbref.off();
-    const dbref = firebase.database().ref(props.root);
-    this.setState({dbref});
-    this.watch(dbref);
-  }
-
-  watch(ref) {
-    ref.on('value', db => {
-      db = db.val();
-      //console.log('value', db);
-      if (db) {           // Avoid overwriting local info on first login.
-        // TODO, find a way for existing objects to maintain references
-        for (const id of Object.keys(db)) {
-          flush(id);
-        }
-        this.setState({
-          db: db,
-          league: hydrate(League, db.leagues[0], db, new Set()),
-        });
-      }
-    });
-  }
-
 
   handleModeChange = (event, index, value) => {
     console.log(event,index,value);
     this.setState({mode: value});
   }
 
-  handleRandomize(hatreds) {
-    const keep = this.state.league.schedule;
-    for (const div of this.state.league.divisions) {
-      for (const team of div.teams) {
-        let hate = keep;
-        while (hate === keep)
-          hate = _.sample(hatreds);
-        team.exclude = [hate];
-        console.log(team.exclude);
-      }
+  handleRandomize() {
+    var games = this.state.league.clearGames();          // removes unpinned games
+    if (games.length === 0) {
+      // Either all pinned, or none scheduled.  Assume latter for now - new board.
+      const matchups = _.shuffle(this.state.league.allMatchups());
+      games = matchups.map(m => new Game(m));
     }
-    this.forceUpdate();
-  }
-  
-  handleReschedule() {
-    const start = performance.now();
-    let now = start;
-    let attempts = 0;
-    do {
-      var done = this.state.league.reschedule();
-      attempts++;
-      if (done)
-        break;
-      now = performance.now();
-    } while (now - start < 3000.0); // Work for a while
-    // TODO: If we fail to fully reschedule, it would be nice to use
-    // the "best" schedule we found.  Either with empty slots, or with
-    // bad games marked up.
-    if (attempts > 1)
-      console.log(`${attempts} attempts, in ${Math.round(now-start)}ms.`)
+    
+    // TODO: Consider a first pass that tries to find viable games.
+
+    // Just fill
+    for (const [, time, game, slots] of this.state.league.schedule.games()) {
+      if (!game)
+        slots[time] = games.pop();
+    }
+    this.state.league.schedule.leftover = games;
+
     this.state.league.dehydrate(this.state.db, new Set());
     const leagues = [this.state.league.id];
     this.setState({leagues});
     console.log("Save", this.state.db);
-    this.state.dbref.set(this.state.db);
+  }
+  
+  handleFix() {
+    this.state.league.schedule.fix();
+
+    this.state.league.dehydrate(this.state.db, new Set());
+    const leagues = [this.state.league.id];
+    this.setState({leagues});
+    console.log("Save", this.state.db);
   }
 
-  onUpdate(reschedule = false) {
-    if (reschedule)
-      this.handleReschedule();  // which will also cause update
-    else
-      this.forceUpdate();
+  onUpdate() {
+    this.forceUpdate();
   }
 
   render() {
@@ -975,11 +906,10 @@ class LeaguePager extends Component {
             <Divisions league={league} mode={mode} factors={factors}
                        onUpdate={(r) => this.onUpdate(r)}/>
             <ExtraMatchups league={league} onUpdate={(r) => this.onUpdate(r)}/>
-            <Unsatisfied league={league}/>
-            <RaisedButton primary={true} label="Reschedule"
-                          onClick={() => this.handleReschedule()} />
             <RaisedButton primary={true} label="Randomize"
-                          onClick={() => this.handleRandomize(factors)} />
+                          onClick={() => this.handleRandomize()} />
+            <RaisedButton primary={true} label="Fix"
+                          onClick={() => this.handleFix()} />
             <Calendar schedule={league.schedule}
                       onUpdate={(r) => this.onUpdate(r)}/>
             </div>
@@ -1027,7 +957,7 @@ const ExtraMatchups = ({league, onUpdate}) => {
     }
     const matchup = [team0, team1];
     league.extra.push(matchup);
-    league.trySchedule(matchup);
+    league.schedule.add(matchup);
     onUpdate();
   }
   const extras = league.extra.map((m, i) =>
@@ -1047,7 +977,7 @@ const ExtraMatchups = ({league, onUpdate}) => {
     </div>;
 }
 
-class ExtraMatchup extends Component {
+class ExtraMatchup extends React.Component {
   handleTeamChange(m, event, index, value) {
     var {matchup, teams, onUpdate} = this.props;
     matchup[m] = teams[index];
@@ -1065,7 +995,7 @@ class ExtraMatchup extends Component {
 }
 
 
-class TeamList extends Component {
+class TeamList extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -1089,6 +1019,12 @@ class TeamList extends Component {
     this.props.division.gpt = value;
     this.props.onUpdate();
   }
+  addTeam() {
+    const num = this.props.division.teams.length;
+    const team = new Team("Team "+num);
+    this.props.division.addTeam(team);
+    this.props.onUpdate();
+  }
 
 
   renderHead() {
@@ -1103,29 +1039,18 @@ class TeamList extends Component {
       return <div onClick={() => this.edit(division.id)}>{division.name} Division</div>
     }
   }
-  renderTeam(team, mode, factors) {
-    if (this.state.editing === team.id) {
-      return <div className="row" key={team.id}>
-              <div className="col-6">
-                <input type="text" autoFocus
-                       size="42"
-                       onKeyDown={(e) => this.handleKeyDown(e, team)}
-                       onBlur={() => this.edit(0)}
-                       defaultValue={team.editName()}/>
-              </div>
-             </div>;
-    } else {
-      return <TeamLine onClick={() => this.edit(team.id)}
-               key={team.id} team={team} mode={mode} factors={factors}
-               onUpdate={this.props.onUpdate}/>;
-    }
-  }
 
   render() {
     const { division, mode, factors } = this.props;
-    const lines = division.teams
-      .sort((a, b) => b.rank() - a.rank())
-          .map(team => this.renderTeam(team, mode, factors));
+    // _.sortBy is used for stability, so ties broken by the orignal lexical sort
+    const lines = _.sortBy(division.teams
+                           .sort((a, b) => a.name.localeCompare(b.name)),
+                           t => t.rank())
+          .map(team =>
+               <TeamLine editing={this.state.editing === team.id}
+                         onEdit={(id) => this.edit(id)}
+                         key={team.id} team={team} mode={mode} factors={factors}
+                         onUpdate={this.props.onUpdate}/>)
 
     const record = mode === 'Schedule' ? "" :
       <div className="row">
@@ -1146,6 +1071,8 @@ class TeamList extends Component {
             <h2>{this.renderHead()}</h2>
             {record}
             {lines}
+            {mode !== 'Schedule' ? '' :
+             <div className='add' onClick={() => this.addTeam()}>+</div>}
             {games}<br/>
             {summary}
             </div>
@@ -1178,7 +1105,7 @@ const MenuItems = ({values, labels, open, anchor, onChange, onRequestClose}) => 
          </Popover>
 }
 
-class TeamLine extends Component {
+class TeamLine extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -1201,16 +1128,31 @@ class TeamLine extends Component {
     this.props.onUpdate();
   }
   
-  handleTouchTap(event) {
-    event.preventDefault();     // This prevents ghost click.
+  handleClick(event) {
     this.setState({
       adding: true,
       anchor: event.currentTarget,
     });
   }
 
+  handleKeyDown(event, named) {
+    if (event.keyCode === 13) {
+      [named.name, named.nick] = extractParenthetical(event.target.value);
+      if (named.name === '') {
+        console.log(named.division);
+        named.division.removeTeam(named);
+        console.log(named.division);
+      }
+      this.props.onUpdate();
+      event.target.blur();
+    }
+    if (event.keyCode === 27) {
+      event.target.blur();
+    }
+  }
+
   render() {
-    const {team, mode, factors, onClick} = this.props;
+    const {team, mode, factors, editing, onEdit} = this.props;
     if (mode === 'Schedule') {
       const styles = {
         chip: {
@@ -1225,18 +1167,28 @@ class TeamLine extends Component {
       <Chip key={hatred} labelColor={red500}
             onRequestDelete={() => this.remove(team, hatred)}
             style={styles.chip}>{hatred}</Chip>);
-      return <div className="row team">
-        <div className="col-6" onClick={onClick}>{team.name}</div>
-        <div className="col">
-            <ThumbDown color={red500} onTouchTap={ev => this.handleTouchTap(ev)}/>
-            <MenuItems values={factors}
-                       open={this.state.adding}
-                       anchor={this.state.anchor}
-                       onChange={(e,v) => this.add(team, v)}
-                       onRequestClose={() => this.setState({adding: false})}/>
-            <div style={styles.hates}>{chips}</div>
-        </div>
-        </div>
+      let label = <div className="col-6" onClick={() => onEdit(team.id)}>{team.name}</div>;
+
+      if (editing) {
+        label = <div className="col-6">
+                  <input type="text" autoFocus size="42"
+                         onKeyDown={(e) => this.handleKeyDown(e, team)}
+                         onBlur={() => onEdit(0)}
+                         defaultValue={team.editName()}/>
+                </div>
+      }
+      return <div className="row team" key={team.id}>
+               {label}
+               <div className="col">
+                 <ThumbDown color={red500} onClick={ev => this.handleClick(ev)}/>
+                 <MenuItems values={factors}
+                            open={this.state.adding}
+                            anchor={this.state.anchor}
+                            onChange={(e,v) => this.add(team, v)}
+                            onRequestClose={() => this.setState({adding: false})}/>
+                 <div style={styles.hates}>{chips}</div>
+               </div>
+             </div>;
     }
     return <div className="row team">
       <div className="col-6">{team.name}</div>
@@ -1246,20 +1198,7 @@ class TeamLine extends Component {
   }
 }
 
-const Unsatisfied = ({league}) => {
-  var i = 0;
-  var unscheduled = league.unscheduled().map(matchup =>
-    <li key={slug(i++, matchup[0].id, matchup[1].id)}>
-      {matchup[0].nickname()} <i> vs </i> {matchup[1].nickname()}
-    </li>);
-  if (unscheduled.length === 0)
-    return <div/>;
-  return (<div className="unsatisfied">
-          There are {unscheduled.length} unscheduled matchups.
-          </div>);
-}
-
-class Calendar extends Component {
+class Calendar extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -1293,6 +1232,25 @@ class Calendar extends Component {
     this.setState({target: null});
   }
 
+  addDate() {
+    const {schedule, onUpdate} = this.props;
+    const date = schedule.nextDate();
+    schedule.calendar[date] = {};
+    for (const time of schedule.times()) {
+      schedule.calendar[date][time] = null
+    }
+    onUpdate();
+  }
+
+  addTime() {
+    const {schedule, onUpdate} = this.props;
+    const time = schedule.nextTime();
+    for (const date of schedule.dates()) {
+      schedule.calendar[date][time] = null;
+    }
+    onUpdate();
+  }
+
   render() {
     const {schedule, onUpdate} = this.props;
     var headings = schedule.times();
@@ -1308,7 +1266,11 @@ class Calendar extends Component {
     return <div className="schedule">
              <h2>Schedule</h2>
              <div className="row hidden-lg-down">
-               <div className="col"></div>
+               <div className="col">
+                 <span className='add' onClick={() => this.addDate()}>+day</span>
+                 &nbsp;&nbsp;
+                 <span className='add' onClick={() => this.addTime()}>+time</span>
+               </div>
                {headings.map(h => <div key={h} className="col time">{h}</div>)}
              </div>
              {days}
@@ -1331,13 +1293,13 @@ const Day = ({date, headings, schedule, onEmptyClick, target, setTarget, onUpdat
   });
   return <div className="row day">
            <div className="col-xl">
-             {moment(date, "MMM DD, YYYY").format("MMM D")}
+            {date}
            </div>
            {boxes}
          </div>;
 }
 
-class Slot extends Component {
+class Slot extends React.Component {
   moveClick() {
     const {date, time, setTarget} = this.props;
     setTarget([date, time]);
@@ -1385,9 +1347,10 @@ class Slot extends Component {
 
     let moving = _.isEqual([date, time], target);
     if (!moving && target) {
-      const targetGame = schedule.calendar[target[0]][target[1]];
-      console.log(targetGame);
-      moving = schedule.canPlace(targetGame.matchup, date, time);
+      moving = schedule.canSwap(target, [date, time]);
+      // Don't mark something as possible if it's a swap between empty slots
+      moving = moving && (schedule.calendar[target[0]][target[1]] ||
+                          schedule.calendar[date][time]);
     }
     return <div className={slotClass + " game col-md-2 col-xl"}>
            <GameControl game={game} time={time} moving={moving}
@@ -1397,7 +1360,7 @@ class Slot extends Component {
   }
 }
 
-class GameControl extends Component {
+class GameControl extends React.Component {
   togglePin(game) {
     game.pinned = !game.pinned;
     this.forceUpdate();
@@ -1421,7 +1384,7 @@ class GameControl extends Component {
   }
 }
 
-class Authenticate extends Component {
+class Authenticate extends React.Component {
   logout() {
     firebase.auth().signOut().then(() => console.log("Sign-out successful."),
                                    (error) => console.log("Sign-out error.",
@@ -1442,7 +1405,7 @@ class Authenticate extends Component {
   }
 }
 
-class Pikkels extends Component {
+class Pikkels extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -1463,24 +1426,11 @@ class Pikkels extends Component {
       }
     });
   }
-  key() {
-    if (this.state.user) {
-      return `/user/${this.state.user.uid}/db`;
-    } else {
-      return '/public/pkl';
-    }
-  }
 
-  handleNextYear() {
-
-  }
-  
   render() {
     return <div>
            <Authenticate user={this.state.user}/>
-           <LeaguePager user={this.state.user} root={this.key()}/>
-           <RaisedButton primary={true} label="Next Year"
-                         onClick={() => this.handleNextYear()} />
+           <LeaguePager user={this.state.user}/>
            </div>;
   }
 }
