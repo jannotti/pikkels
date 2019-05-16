@@ -1,0 +1,17 @@
+{
+  "development": {
+    "username": "jj",
+    "password": null,
+    "database": "pikkels",
+    "dialect": "postgres",
+    "operatorsAliases": false
+  },
+  "production": {
+    "username": "jj",
+    "password": null,
+    "database": "pikkels",
+    "host": "127.0.0.1",
+    "dialect": "postgres",
+    "operatorsAliases": false
+  }
+}

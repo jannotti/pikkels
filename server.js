@@ -2,7 +2,7 @@ const express = require('express');
 const Sequelize = require('sequelize');
 
 const app = express();
-
+app.use(express.json());
 app.set('port', process.env.PORT || 3001);
 
 // Express only serves static assets in production
@@ -11,53 +11,34 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 
-// These are irrelevant for sqlite
-const [dbname, user, password] = ['main', 'joe', 'sup3rs3cr3t'];
+const db = require('./models');
+db.sequelize.sync({alter: true}).then(console.log);
 
-const sequelize = new Sequelize(dbname, user, password, {
-  dialect: 'sqlite',
-  storage: 'db/usda-nnd.sqlite3', // sqlite only
-  operatorsAliases: false,      // improve security
-  logging: false,               // keep stdout cleaner in demo
-});
+app.get('/api/user', (req, res) => {
+  const id = req.query.id;
 
-
-// Tell Sequelize how to access the entries table.
-const Entry = sequelize.define('entries', {
-  carbohydrate_g: Sequelize.REAL,
-  protein_g: Sequelize.REAL,
-  fa_sat_g: Sequelize.REAL,
-  fa_mono_g: Sequelize.REAL,
-  fa_poly_g: Sequelize.REAL,
-  kcal: Sequelize.REAL,
-  description: Sequelize.STRING(100),
-}, {
-  timestamps: false,
-});
-Entry.removeAttribute('id');
-
-app.get('/api/food', (req, res) => {
-  const param = req.query.q;
-
-  if (!param) {
+  if (!id) {
     res.json({
-      error: 'Missing required parameter `q`',
+      error: 'Missing required parameter `id`',
     });
     return;
   }
 
-  Entry.findAll({
-    // Sequelize will SELECT all known columns by default. This adds
-    // another "column" to the result that is the sum of the various
-    // fat columns.
-    attributes: {
-      include: [[Sequelize.literal('round(fa_sat_g+fa_mono_g+fa_poly_g, 2)'),
-                 'fat_g']] },
-    where: {
-      description: { [Sequelize.Op.like]: `%${param}%` },
-    },
-    limit: 100,
-  }).then(r => res.json(r));
+  db.User.findById(id).then(user => res.json(user));
+});
+
+app.post('/api/user', (req, res) => {
+  const id = req.query.id;
+
+  if (!id) {
+    res.json({
+      error: 'Missing required parameter `id`',
+    });
+    return;
+  }
+
+  db.User.upsert({ id: id,  db: req.body})
+    .then(created => res.json(created));
 });
 
 

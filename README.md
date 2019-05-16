@@ -6,6 +6,14 @@ Providence Kickball League Scheduler
 - Set a deadline for exceptions
 - Consider championship rematch
 
+## Needed features
+- Specify an exact game (matchup and time) in intial db
+- mechanism for dealing with seeding automatically
+- way to see and change the subset of round robin games played when n < r
+-- perhaps a grid showing which games could be played, which are, and editable.
+-- and/or a better than random way to get a good ("fair") subset
+
+
 ## 2016 Records
 -Muscle Cobra   11	1
 -The Wolfpack	9	2
@@ -21,7 +29,7 @@ Providence Kickball League Scheduler
 -Glamazons	5	5
 -Los Equipped	3	6
 -The Stilettos	1	8
--New team       1       8
+-Lazy Prog      1       8  (now Suck my kick, move them to middle)
 -Jedi	        1	9
 -Clams Casino	0      10
 
@@ -46,6 +54,25 @@ Providence Kickball League Scheduler
 -The Lazy Progressives	        1	9
 -C U Next Tuesday: Clams Casino	0	10
 
+## 2018 Seeding
+-Muscle Cobra, Inc. (401PKL)  12	1
+-Ball is Life	               9	4
+-Dexter Park Rangers	       9	3
+-The Unstoppaballs	       8	4
+-Trippin’ Marios	       7	5
+-Meat Sweats	               7	5
+-Ball 12 For Action	       6	5
+-#GFY	                       6	5
+-Menaces II Sobriety           6	5
+-Narragansett Baywatch	       6	5
+-Suck My Kick                
+-Jedi Mind Kicks	       5	5
+-Fox Point Booters	       4	6
+-The Wolfpack	               4	6
+-The Stilettos	               4	6
+-Bad Taste	               3	7
+-The Glamazons	               1	9
+-C U Next Tuesday              0	10
 
 ## New scheduling process
 - insert all, at random (randomize button)

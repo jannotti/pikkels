@@ -5,22 +5,14 @@ import PropTypes from 'prop-types';
 
 import _ from 'lodash';
 import moment from 'moment';
-//import cx from 'classnames';
 
+import Button from 'material-ui/Button';
 import Chip from 'material-ui/Chip';
-import Menu from 'material-ui/Menu';
-import MenuItem from 'material-ui/MenuItem';
-import Popover from 'material-ui/Popover';
-import RaisedButton from 'material-ui/RaisedButton';
-import SelectField from 'material-ui/SelectField';
-import {red500} from 'material-ui/styles/colors';
+import Icon from 'material-ui/Icon';
+import Menu, { MenuItem } from 'material-ui/Menu';
+import Select from 'material-ui/Select';
 
-import ThumbDown from 'material-ui/svg-icons/action/thumb-down';
-import Delete from 'material-ui/svg-icons/action/delete';
-
-import * as firebase from 'firebase';
-
-// Initialize Firebase
+import firebase from 'firebase';
 firebase.initializeApp({
   apiKey: "AIzaSyD7XCiSz3toIGudX9eKJ2b2UIEkLvB-n_A",
   authDomain: "pikkels-eec0c.firebaseapp.com",
@@ -29,71 +21,85 @@ firebase.initializeApp({
   messagingSenderId: "45401401652"
 });
 
+import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
 
-import * as firebaseui from 'firebaseui'
-import 'firebaseui/dist/firebaseui.css';
-const uiConfig = {
-  signInSuccessUrl: '?success',
-  signInOptions: [
-    firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-    // firebase.auth.FacebookAuthProvider.PROVIDER_ID,
-    // firebase.auth.TwitterAuthProvider.PROVIDER_ID,
-    // firebase.auth.GithubAuthProvider.PROVIDER_ID,
-    firebase.auth.EmailAuthProvider.PROVIDER_ID
-  ],
-  tosUrl: '?tos'
-};
+const LATE = ["3PM", "4PM", "5PM", "6PM"];
 
 const DB = {
   leagues: [1],
-  1: {name: "Providence Kickball", nick: 'PKL', year: 2018,
-      schedule: 22, divisions: [2]},
+  1: {name: "Providence Kickball", nick: "PKL", year: 2018,
+      schedule: 21, divisions: [2]},
 
-  2: {name: "United", gpt: 10, ensure: [[5,16],[3,4],[5,6],[7,8],[20,21],[18,19]], avoid: [[3,9],[3,20],[3,21],[4,20],[4,21],[5,21]],
-      teams: [3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]},
-
+  2: {name: "United", gpt: 10,
+      ensure: [[3,4],[5,6],[7,8], // good teams play each other
+               [18,19],[16,17],   // bad teams play each other
+               [4,16],            // wanted matchups
+              ],
+      avoid: [[3,17],[3,18],[3,19], // best don't play worst 3
+              [4,18],[4,19],        // 2nd best don't play worst 2
+              [5,17],               // 3rd don't play worst
+              [10,12], [3,8], [3,17],// unwanted matchups (new, corey, several)
+              [7, 18], // dexter / jedi (middle vs edge)
+              [8, 13], [8,15], // baywatch vs menace/suck late /early
+             ],
+      teams: [3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]},
   3: {name: "Muscle Cobra, Inc.", nick: "Muscle Cobra",
-      exclude: ["11AM", "12PM", "1PM",
-                "Jul 7", "Jul 14", "Jul 22", "Jul 28"]},
-  4: {name: "The Wolfpack", nick: "Wolfpack"},
-  5: {name: "Meat Sweats", exclude: ["Aug 11"]},
-  6: {name: "Ball is Life"},
-  // For unstoppaballs, Jun 2 and Sep 25 is ok if 12pm or 1pm game
-  7: {name: "Unstoppaballs", exclude: ["May 26", "Jun 2", "Aug 21", "Sep 25"]},
-  8: {name: "Ball 12 For Action", nick: "Ball 12", exclude: ["Jul 29"] },
-  9: {name: "Narragansett Baywatch", nick: "Baywatch"},
-  10: {name: "Dexter Park Rangers", nick: "Rangers"},
-  11: {name: "Trailer Park Problems", nick: "TPP"},
-  12: {name: "Trippin' Marios", nick: "Marios"},
-  13: {name: "GFY"},
-  14: {name: "Glamazons"},
-  15: {name: "Los Equipped", nick: "Equipped"},
-  16: {name: "The Stilettos", nick: "Stilettos"},
-  17: {name: "Fox Point Booters", nick: "Fox Point"},
-  18: {name: "Bad Taste"},
-  19: {name: "Lazy Progressives"},
-  20: {name: "Jedi Mind Kicks"},
-  21: {name: "Clams Casino", nick: "Clams"},
+      exclude: ["Jun 1", "Jul 13"]},
+  4: {name: "Black Sheep", exclude: ["Jun 8"]},
+  5: {name: "Trippin' Marios", nick: "Marios", exclude: ["Jun 22", "Jul 27"] },
+  6: {name: "The Wolfpack", nick: "Wolfpack", exclude: ["Jun 1"] },
+  7: {name: "Dexter Park Dads", nick: "Dads",
+      exclude: ["Jul 6", "Jul 13", "11AM", "12PM", "4PM", "5PM", "6PM"]},
+  8: {name: "Narragansett Baywatch", nick: "Baywatch",
+      exclude: ["Jun 22", "Jul 20", "Aug 31", "11AM", "12PM", "1PM",
+                "2PM"
+               ]},
+  9: {name: "Unstoppaballs", exclude: ["May 25", "Jun 8", "Jun 29", "Jul 13"]},
+  10: {name: "OPR", exclude: ["May 25", "Jun 15", "Jul 13", "Aug 31"]},
+  11: {name: "Fox Point Booters", nick: "Fox Point", exclude: ["May 25", "Jun 29", "Jul 6"]},
+  12: {name: "New Team"},
+  13: {name: "Menace II Sobriety", nick: "Menaces", exclude: [...LATE]},
+  14: {name: "Meat Sweats", exclude: ["Jun 15", "Jul 13"]},
+  15: {name: "Suck My Kick", nick: "Suck",
+       exclude: ["Jun 15", "Aug 31", ...LATE]},
+  16: {name: "Bad Taste", exclude: ["Jun 1", "Jun 8", "Jun 15"]},
+  17: {name: "Glamazons", exclude: ["11AM", "12PM", "1PM"]},
+  18: {name: "Jedi Mind Kicks", exclude: ["1PM", "2PM", "3PM", "4PM",
+                                          "Jun 22", "Jun 29",
+                                         ]},
+  19: {name: "C U Next Tuesday", nick: "Clams"},
 
-  22: {
+  21: {
     leftover: [],
     calendar: {
-      "May 26": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0,
-                 "3PM": 0, "4PM": 0, "5PM": 0, "6PM": 0},
-      "Jun 2":  {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Jun 9": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Jun 16": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Jun 23": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Jun 30": {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Jul 7": {"11AM": 0, "12PM": 0, "1PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Jul 14": {"11AM": 0, "12PM": 0, "1PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Jul 21": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Jul 28": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Aug 4":  {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Aug 11": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Aug 18": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Aug 25": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
-      "Sep 1":  {"12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0},
+      "May 25": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0,
+                  "3PM": 0,  "4PM": 0, "5PM": 0},
+      "Jun 1":  {           "12PM": 0, "1PM": 0, "2PM": 0,
+                  "3PM": 0,  "4PM": 0, "5PM": 0},
+      "Jun 8":  {           "12PM": 0, "1PM": 0, "2PM": 0,
+                  "3PM": 0,  "4PM": 0, "5PM": 0},
+      "Jun 15": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0,
+                  "3PM": 0,  "4PM": 0, "5PM": 0},
+      "Jun 22": {           "12PM": 0, "1PM": 0, "2PM": 0,
+                  "3PM": 0,  "4PM": 0, "5PM": 0},
+      "Jun 29": {           "12PM": 0, "1PM": 0, "2PM": 0,
+                  "3PM": 0,  "4PM": 0, "5PM": 0},
+      "Jul 13": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0,
+                  "3PM": 0,  "4PM": 0, "5PM": 0},
+      "Jul 20": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0,
+                  "3PM": 0,  "4PM": 0, "5PM": 0},
+      "Jul 27": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0,
+                  "3PM": 0,  "4PM": 0, "5PM": 0},
+      "Aug 3":  {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0,
+                  "3PM": 0,  "4PM": 0, "5PM": 0},
+      "Aug 10": {"11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0,
+                  "3PM": 0,  "4PM": 0, "5PM": 0},
+      "Aug 17": {           "12PM": 0, "1PM": 0, "2PM": 0,
+                  "3PM": 0,  "4PM": 0, "5PM": 0},
+      "Aug 24": {           "12PM": 0, "1PM": 0, "2PM": 0,
+                  "3PM": 0,  "4PM": 0},
+      "Aug 31": {           "12PM": 0, "1PM": 0, "2PM": 0,
+                  "3PM": 0,  "4PM": 0},
     }},
 };
 
@@ -131,12 +137,12 @@ class Game {
     this.pinned = false;
   }
 
-  hydrate (id, db) {
+  hydrate (id, db, pre) {
     const json = db[id];
-    this.matchup = json.matchup.map(t => hydrate(Team, t, db));
+    this.matchup = json.matchup.map(t => hydrate(Team, t, db, pre));
     this.tellTeams(true);
     if ('winner' in json)
-      this.winner = hydrate(Team, json.winner, db);
+      this.winner = hydrate(Team, json.winner, db, pre);
     else
       this.winner = null;
     if ('score' in json) {
@@ -187,17 +193,20 @@ class Game {
 }
 
 class Schedule {
-  constructor(id, db) {
+  constructor(id) {
     this.id = id;
+  }
+
+  hydrate(id, db, pre) {
     const json = db[id];
     this.leftover = [];
     if ('leftover' in json)
-      this.leftover = json.leftover.map(game => hydrate(Game, game, db));
+      this.leftover = json.leftover.map(game => hydrate(Game, game, db, pre));
     this.calendar = _.mapValues(json.calendar, (slots, date) => {
       return _.mapValues(slots, game => {
         if (!game)
           return null
-        return hydrate(Game, game, db);
+        return hydrate(Game, game, db, pre);
       });
     });
   }
@@ -362,6 +371,7 @@ class Schedule {
       if (!hgame || hgame.pinned || this.canPlace(hgame.matchup, hdate, htime))
         continue;
       // we have a hater!
+      // eslint-disable-next-line
       CANDIDATES:
       for (const [c1date, c1time, c1game] of this.games()) {
         if (c1game === hgame || (c1game && c1game.pinned))
@@ -440,7 +450,7 @@ class Division {
     this.id = id;
   }
 
-  hydrate(id, db) {
+  hydrate(id, db, pre) {
     const json = db[id];
     this.name = json.name;
     this.nick = false;
@@ -448,14 +458,14 @@ class Division {
     this.gpt = json.gpt;
 
     this.avoid = json.avoid.map(pair => {
-      return pair.map(id => hydrate(Team, id, db))
+      return pair.map(id => hydrate(Team, id, db, pre))
     });
     this.ensure = json.ensure.map(pair => {
-      return pair.map(id => hydrate(Team, id, db))
+      return pair.map(id => hydrate(Team, id, db, pre))
     });
 
     this.teams = json.teams.map(id => {
-      const team = hydrate(Team, id, db);
+      const team = hydrate(Team, id, db, pre);
       team.division = this;
       return team;
     });
@@ -551,6 +561,7 @@ class Division {
       }
       for (const matchup of this.ensure) {
         const m = possible.find(p => matches(matchup, p));
+        console.log(matchup, m);
         used.add(m);
         counts[m[0].id]++;
         counts[m[1].id]++;
@@ -635,20 +646,20 @@ class League {
     this.extra = [];
   }
 
-  hydrate(id, db) {
+  hydrate(id, db, pre) {
     const json = db[id];
     this.name = json.name;
     this.nick = false;
     if ('nick' in json) this.nick = json.nick;
     this.year = json.year;
 
-    this.divisions = json.divisions.map(id => hydrate(Division, id, db));
+    this.divisions = json.divisions.map(id => hydrate(Division, id, db, pre));
     if ('extra' in json) {
-      this.extra = json.extra.map(m => m.map(id => hydrate(Team, id, db)));
+      this.extra = json.extra.map(m => m.map(id => hydrate(Team, id, db, pre)));
     } else {
       this.extra = this.pklDefault();
     }
-    this.schedule = new Schedule(json.schedule, db);
+    this.schedule = hydrate(Schedule, json.schedule, db, pre);
   }
 
   dehydrate(db, mark) {
@@ -731,30 +742,36 @@ class League {
 }
 
 
-function hydrate(cls, id, db) {
+function hydrate(cls, id, db, precache) {
   if (id === null || id === 0)
     return null;
-  if (id in hydrate.CATALOG) {
-    return hydrate.CATALOG[id];
+  if (parseInt(id, 10) > hydrate.ID)
+    hydrate.ID = parseInt(id, 10) + 1;
+
+  if (id in precache) {
+    return precache[id];
   }
 
   if (!(id in db)) {
+    // trying to reference something that isn't in the db, can load
+    // from "old" cache.
+    if (id in hydrate.CATALOG) {
+      return hydrate.CATALOG[id];
+    }
     console.log(cls, id, " not in database.");
   }
+  // not in precache, but is in db which may be an update.  build it.
   const obj = new cls(id);
-  hydrate.CATALOG[id] = obj;
-  obj.hydrate(id, db);
+  hydrate.CATALOG[id] = precache[id] = obj;
+  obj.hydrate(id, db, precache);
   return obj;
 }
-function flush(id) {
-  delete hydrate.CATALOG[id];
-}
 hydrate.CATALOG = {};
-hydrate.ID = _.max(_.keys(DB).map(_.parseInt))+1;
+hydrate.ID = 1;
 
 class Team {
   constructor(arg1, arg2) {
-    if (typeof arg === "number") {
+    if (typeof arg1 === "number") {
       this.id = arg1;
     } else {
       this.name = arg1;
@@ -766,7 +783,7 @@ class Team {
     this.exclude = [];
   }
 
-  hydrate(id, db) {
+  hydrate(id, db, pre) {
     const json = db[id];
     this.name = json.name;
     this.nick = false;
@@ -774,7 +791,7 @@ class Team {
 
     this.games = [];
     if ('games' in json)
-      this.games = json.games.map(id => hydrate(Game, id, db));
+      this.games = json.games.map(id => hydrate(Game, id, db, pre));
 
     this.exclude = [];
     if ('exclude' in json) this.exclude = json.exclude;
@@ -844,22 +861,33 @@ class Team {
 const MODES = ["Schedule", "Play", "Display"];
 
 class LeaguePager extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      // Start with builtin data
-      db: DB,
-      league: hydrate(League, DB.leagues[0], DB),
-      mode: 'Schedule',
+  state = {
+    league: hydrate(League, DB.leagues[0], DB, {}),
+    mode: MODES[0],
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.props.user && this.props.user !== prevProps.user) {
+      fetch(`api/user?id=${this.props.user.uid}`, {
+        accept: "application/json"
+      }).then(r => r.json())
+        .then(user => {
+          console.log("from fetch", user);
+          if (user) {
+            this.setState({ league: hydrate(League,
+                                            user.db.leagues[0],
+                                            user.db, {})})
+          }
+        })
+        .catch(console.error);
     }
   }
 
-  handleModeChange = (event, index, value) => {
-    console.log(event,index,value);
-    this.setState({mode: value});
+  handleModeChange = event => {
+    this.setState({mode: event.target.value});
   }
 
-  handleRandomize() {
+  handleRandomize = () => {
     var games = this.state.league.clearGames();          // removes unpinned games
     if (games.length === 0) {
       // Either all pinned, or none scheduled.  Assume latter for now - new board.
@@ -868,6 +896,9 @@ class LeaguePager extends React.Component {
     }
     
     // TODO: Consider a first pass that tries to find viable games.
+    // Should really find the hardest matches to schedule (because
+    // constainst limit options) and put them into viable places
+    // first.
 
     // Just fill
     for (const [, time, game, slots] of this.state.league.schedule.games()) {
@@ -876,27 +907,46 @@ class LeaguePager extends React.Component {
     }
     this.state.league.schedule.leftover = games;
 
-    this.state.league.dehydrate(this.state.db, new Set());
+    const db = {};
+    this.state.league.dehydrate(db, new Set());
     const leagues = [this.state.league.id];
+    db.leagues = leagues;
     this.setState({leagues});
-    console.log("Save", this.state.db);
+    this.save(db);
+  }
+
+  save(db) {
+    if (this.props.user) {
+      fetch(`api/user?id=${this.props.user.uid}`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify(db),
+      }).then(console.log);
+    }
   }
   
-  handleFix() {
+  handleFix = () => {
     this.state.league.schedule.fix();
 
-    this.state.league.dehydrate(this.state.db, new Set());
+    const db = {};
+    this.state.league.dehydrate(db, new Set());
     const leagues = [this.state.league.id];
+    db.leagues = leagues;
     this.setState({leagues});
-    console.log("Save", this.state.db);
+    this.save(db);
   }
 
-  onUpdate() {
+  onUpdate = () => {
     this.forceUpdate();
   }
 
   render() {
     const {league, mode} = this.state;
+    if (!league) {
+      return <div>No League</div>
+    }
     console.log(this.state);
     const factors = [...league.schedule.times(), ...league.schedule.dates()];
     return (<div className="league">
@@ -904,14 +954,17 @@ class LeaguePager extends React.Component {
             <Picker value={mode} onChange={this.handleModeChange}
                     choices={MODES}/>
             <Divisions league={league} mode={mode} factors={factors}
-                       onUpdate={(r) => this.onUpdate(r)}/>
-            <ExtraMatchups league={league} onUpdate={(r) => this.onUpdate(r)}/>
-            <RaisedButton primary={true} label="Randomize"
-                          onClick={() => this.handleRandomize()} />
-            <RaisedButton primary={true} label="Fix"
-                          onClick={() => this.handleFix()} />
-            <Calendar schedule={league.schedule}
-                      onUpdate={(r) => this.onUpdate(r)}/>
+                       onUpdate={this.onUpdate}/>
+            <ExtraMatchups league={league} onUpdate={this.onUpdate}/>
+            <Button color="primary" variant="raised"
+                    onClick={this.handleRandomize}>
+              Randomize
+            </Button>
+            &nbsp;
+            <Button color="primary" variant="raised" onClick={this.handleFix}>
+              Fix
+            </Button>
+            <Calendar schedule={league.schedule} onUpdate={this.onUpdate}/>
             </div>
            );
   }
@@ -965,7 +1018,7 @@ const ExtraMatchups = ({league, onUpdate}) => {
                                   <ExtraMatchup matchup={m}
                                                 teams={league.teams()}
                                                 onUpdate={onUpdate}/>
-                                  <Delete onClick={() => remove(i)}/>
+                                  <Icon onClick={() => remove(i)}>delete</Icon>
                                   </li>)
   if (league.divisions.length < 2)
     return <div></div>
@@ -979,12 +1032,12 @@ const ExtraMatchups = ({league, onUpdate}) => {
 
 class ExtraMatchup extends React.Component {
   handleTeamChange(m, event, index, value) {
-    var {matchup, teams, onUpdate} = this.props;
+    const {matchup, teams, onUpdate} = this.props;
     matchup[m] = teams[index];
     onUpdate();
   }
   render() {
-    var {matchup, teams} = this.props;
+    const {matchup, teams} = this.props;
     return <span>
       <Picker value={matchup[0]} choices={teams} labeler={t => t.name}
               onChange={(e,i,v) => this.handleTeamChange(0,e,i,v)}/>
@@ -1045,7 +1098,7 @@ class TeamList extends React.Component {
     // _.sortBy is used for stability, so ties broken by the orignal lexical sort
     const lines = _.sortBy(division.teams
                            .sort((a, b) => a.name.localeCompare(b.name)),
-                           t => t.rank())
+                           t => -t.rank())
           .map(team =>
                <TeamLine editing={this.state.editing === team.id}
                          onEdit={(id) => this.edit(id)}
@@ -1064,7 +1117,7 @@ class TeamList extends React.Component {
     if (division.teams.length % 2 === 1)
       gpts = gpts.filter(g => g % 2 === 0);
     const games = <Picker value={division.gpt} choices={gpts}
-                          onChange={(e,i,v) => this.handleGamesChange(v)}/>;
+                          onChange={e => this.handleGamesChange(e.target.value)}/>;
     const summary = mode !== 'Schedule' ? "" :
       <span className="summary">Requires {division.gameCount()} games.</span>
     return (<div className={slug(division.nickname()) + " division col-md"}>
@@ -1082,27 +1135,20 @@ class TeamList extends React.Component {
 
 function identity(x) { return x; }
 const Picker = ({value, choices, labeler=identity, onChange}) => {
-  const items = [];
-  let k = 0;
-  for (const v of choices) {
-    k++;
-    items.push(<MenuItem key={k} value={v} primaryText={labeler(v)}/>);
-  }
-  return <SelectField value={value} onChange={onChange}>
+  const items = choices.map(c => <MenuItem key={c} value={c}>{labeler(c)}</MenuItem>);
+  return <Select value={value} onChange={onChange}>
     {items}
-  </SelectField>
+  </Select>
 }
 
-const MenuItems = ({values, labels, open, anchor, onChange, onRequestClose}) => {
-  var items = [];
-  for (const value of values) {
-    items.push(<MenuItem key={value} value={value} primaryText={value}/>);
-  }
-  return <Popover open={open} anchorEl={anchor} onRequestClose={onRequestClose}>
-           <Menu value="" onChange={onChange} onEscKeyDown={onRequestClose}>
-            {items}
-           </Menu>
-         </Popover>
+const MenuItems = ({values, labels, open, anchor, onPick, onClose}) => {
+  const items = values.map(v =>
+                           <MenuItem key={v} value={v} onClick={e => onPick(v)}>
+                             {v}
+                           </MenuItem>);
+  return <Menu open={open} anchorEl={anchor} value="" onClose={onClose}>
+    {items}
+  </Menu>
 }
 
 class TeamLine extends React.Component {
@@ -1164,9 +1210,7 @@ class TeamLine extends React.Component {
         },
       };
       var chips = team.exclude.map(hatred =>
-      <Chip key={hatred} labelColor={red500}
-            onRequestDelete={() => this.remove(team, hatred)}
-            style={styles.chip}>{hatred}</Chip>);
+        <Chip key={hatred} label={hatred} onDelete={() => this.remove(team, hatred)}/>);
       let label = <div className="col-6" onClick={() => onEdit(team.id)}>{team.name}</div>;
 
       if (editing) {
@@ -1180,12 +1224,12 @@ class TeamLine extends React.Component {
       return <div className="row team" key={team.id}>
                {label}
                <div className="col">
-                 <ThumbDown color={red500} onClick={ev => this.handleClick(ev)}/>
+                 <Icon color='action' onClick={ev => this.handleClick(ev)}>thumb_down</Icon>
                  <MenuItems values={factors}
                             open={this.state.adding}
                             anchor={this.state.anchor}
-                            onChange={(e,v) => this.add(team, v)}
-                            onRequestClose={() => this.setState({adding: false})}/>
+                            onPick={choice => this.add(team, choice)}
+                            onClose={() => this.setState({adding: false})}/>
                  <div style={styles.hates}>{chips}</div>
                </div>
              </div>;
@@ -1384,54 +1428,69 @@ class GameControl extends React.Component {
   }
 }
 
-class Authenticate extends React.Component {
-  logout() {
-    firebase.auth().signOut().then(() => console.log("Sign-out successful."),
-                                   (error) => console.log("Sign-out error.",
-                                                          error));
-  }
-  render() {
-    var {user} = this.props;
-    var account = "";
-    if (user !== null) {
-      account = <span>
-        You are {user.uid}. <a href="#" onClick={() => this.logout()}>Logout</a>
-        </span>
+class SignIn extends React.Component {
+  state = {
+    isSignedIn: false
+  };
+
+  uiConfig = {
+    // Popup signin flow rather than redirect flow.
+    signInFlow: 'popup',
+    // We will display Google and Facebook as auth providers.
+    signInOptions: [
+      firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+      firebase.auth.EmailAuthProvider.PROVIDER_ID
+    ],
+    callbacks: {
+      signInSuccess: () => false, // Avoid redirects after sign-in.
     }
-    return <div>
-             <div id="firebaseui-auth-container"></div>
-             {account}
-           </div>
+  };
+
+  componentDidMount() {
+    this.unregisterAuthObserver = firebase.auth().onAuthStateChanged(user => {
+      const {onUserChange} = this.props;
+      this.setState({isSignedIn: !!user})
+      onUserChange(user);
+    });
+  }
+  
+  // un-register Firebase observers when the component unmounts.
+  componentWillUnmount() {
+    this.unregisterAuthObserver();
+  }
+
+  render() {
+    if (!this.state.isSignedIn) {
+      return (
+        <div>
+          <p>Sign-in to save and retrieve league schedules.</p>
+          <StyledFirebaseAuth uiConfig={this.uiConfig} firebaseAuth={firebase.auth()}/>
+        </div>
+      );
+    }
+    return (
+      <div>
+        <p>Welcome, {firebase.auth().currentUser.displayName}. <a href="#" onClick={() => firebase.auth().signOut()}>Logout</a>
+        </p>
+      </div>
+    );
   }
 }
 
 class Pikkels extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      user: null,
-    };
-    firebase.auth().onAuthStateChanged(user => {
-      if (user) {
-        // Immediately set the user
-        this.setState({user});
-      } else {
-        // Initialize the FirebaseUI Widget using Firebase.
-        var ui = new firebaseui.auth.AuthUI(firebase.auth());
-        // The start method will wait until the DOM is loaded.
-        ui.start('#firebaseui-auth-container', uiConfig);
-        this.setState({
-          user: null,
-        });
-      }
-    });
+  state = {
+    user: null,
+  }
+
+  handleUserChange = (user) => {
+    this.setState({user});
   }
 
   render() {
     return <div>
-           <Authenticate user={this.state.user}/>
-           <LeaguePager user={this.state.user}/>
-           </div>;
+      <SignIn onUserChange={this.handleUserChange}/>
+      <LeaguePager user={this.state.user}/>
+    </div>;
   }
 }
 
