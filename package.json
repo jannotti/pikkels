@@ -3,10 +3,10 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
-    "express": "^4.16.3",
-    "pg": "^7.4.2",
-    "sequelize": "^4.37.6",
-    "sequelize-cli": "^4.0.0"
+    "express": "^4.16.4",
+    "pg": "^7.11.0",
+    "sequelize": "^4.44.0",
+    "sequelize-cli": "^4.1.1"
   },
   "scripts": {
     "start": "concurrently 'npm run server' 'npm run client'",
@@ -15,9 +15,9 @@
     "lint": "eslint ."
   },
   "devDependencies": {
-    "babel-eslint": "^8.2.3",
+    "babel-eslint": "^8.2.6",
     "concurrently": "3.1.0",
-    "eslint": "^3.19.0",
+    "eslint": "^5.16.0",
     "eslint-config-airbnb": "14.1.0",
     "eslint-plugin-import": "2.2.0",
     "eslint-plugin-jsx-a11y": "4.0.0",
