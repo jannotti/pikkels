@@ -57,7 +57,7 @@ const DB = {
   9: {name: "Unstoppaballs", exclude: ["May 25", "Jun 8", "Jun 29", "Jul 13"]},
   10: {name: "OPR", exclude: ["May 25", "Jun 15", "Jul 13", "Aug 31"]},
   11: {name: "Fox Point Booters", nick: "Fox Point", exclude: ["May 25", "Jun 29", "Jul 6"]},
-  12: {name: "New Team"},
+  12: {name: "Schwetty Balls", nick: "Schwetty"},
   13: {name: "Menace II Sobriety", nick: "Menaces", exclude: [...LATE]},
   14: {name: "Meat Sweats", exclude: ["Jun 15", "Jul 13"]},
   15: {name: "Suck My Kick", nick: "Suck",
