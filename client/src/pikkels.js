@@ -1324,6 +1324,14 @@ class Calendar extends React.Component {
 }
 
 const Day = ({date, headings, schedule, onEmptyClick, target, setTarget, onUpdate}) => {
+  var excluded = false;
+  if (target) {
+    const game = schedule.calendar[target[0]][target[1]];
+    if (game) {
+      excluded = game.matchup[0].hates(date) || game.matchup[1].hates(date);
+    }
+  }
+
   const slots = schedule.calendar[date];
   var boxes = headings.map(heading => {
     if (! (heading in slots))
@@ -1335,8 +1343,8 @@ const Day = ({date, headings, schedule, onEmptyClick, target, setTarget, onUpdat
                  target={target} setTarget={setTarget} onEmptyClick={onEmptyClick}
                  onUpdate={onUpdate}/>;
   });
-  return <div className="row day">
-           <div className="col-xl">
+  return <div className={"row day "+ (excluded ? "bad" : "good")}>
+    <div className="col-xl">
             {date}
            </div>
            {boxes}
@@ -1405,7 +1413,8 @@ class Slot extends React.Component {
 }
 
 class GameControl extends React.Component {
-  togglePin(game) {
+  togglePin = () => {
+    var {game} = this.props;
     game.pinned = !game.pinned;
     this.forceUpdate();
   }
@@ -1414,13 +1423,12 @@ class GameControl extends React.Component {
     var {game, time, moving, moveClick} = this.props;
     var timeOrScore = (game && game.score) ? game.score[0]+"-"+game.score[1] : time;
     return <div>
-      <span className={moving ? "moving" : "prepmove"}
-            onClick={moveClick}>
+      <span className={moving ? "moving" : "prepmove"} onClick={moveClick}>
         <img width="20" alt="move" src="image/move.png"/>
       </span>
       {game &&
       <span className={game.pinned ? "pinned" : "unpinned"}
-            onClick={() => this.togglePin(game)}>
+            onClick={this.togglePin}>
         <img width="20" alt="pin" src="image/pin.png"/>
       </span>}
       <span className="float-right text-muted hidden-xl-up">{timeOrScore}</span>
