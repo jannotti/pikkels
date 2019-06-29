@@ -1377,6 +1377,14 @@ const Day = ({
   setTarget,
   onUpdate,
 }) => {
+  var excluded = false;
+  if (target) {
+    const game = schedule.calendar[target[0]][target[1]];
+    if (game) {
+      excluded = game.matchup[0].hates(date) || game.matchup[1].hates(date);
+    }
+  }
+
   const slots = schedule.calendar[date];
   var boxes = headings.map(heading => {
     if (!(heading in slots))
@@ -1406,7 +1414,7 @@ const Day = ({
     );
   });
   return (
-    <div className="row day">
+    <div className={"row day " + (excluded ? "bad" : "good")}>
       <div className="col-xl">{date}</div>
       {boxes}
     </div>
@@ -1487,10 +1495,11 @@ const Slot = ({
 };
 
 class GameControl extends React.Component {
-  togglePin(game) {
+  togglePin = () => {
+    var { game } = this.props;
     game.pinned = !game.pinned;
     this.forceUpdate();
-  }
+  };
 
   render() {
     var { game, time, moving, moveClick } = this.props;

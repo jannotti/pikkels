@@ -82,6 +82,10 @@ body {
 .day {
   background-color: #D56C5A;
 }
+.day.bad {
+  opacity: 0.8;
+}
+
 .full {
   width: 100%;
   height: 100%;
