@@ -1,47 +1,44 @@
-const express = require('express');
-const Sequelize = require('sequelize');
+import express from "express";
+import compression from "compression";
 
 const app = express();
 app.use(express.json());
-app.set('port', process.env.PORT || 3001);
+app.use(compression());
+app.set("port", process.env.PORT || 3001);
 
 // Express only serves static assets in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static('client/build'));
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static("client/build"));
 }
 
+const db = require("./models");
+db.sequelize.sync({ alter: true }).then(console.log);
 
-const db = require('./models');
-db.sequelize.sync({alter: true}).then(console.log);
-
-app.get('/api/user', (req, res) => {
+app.get("/api/user", (req, res) => {
   const id = req.query.id;
 
   if (!id) {
     res.json({
-      error: 'Missing required parameter `id`',
+      error: "Missing required parameter `id`",
     });
     return;
   }
-
-  db.User.findById(id).then(user => res.json(user));
+  db.User.findByPk(id).then(user => res.json(user));
 });
 
-app.post('/api/user', (req, res) => {
+app.post("/api/user", (req, res) => {
   const id = req.query.id;
 
   if (!id) {
     res.json({
-      error: 'Missing required parameter `id`',
+      error: "Missing required parameter `id`",
     });
     return;
   }
 
-  db.User.upsert({ id: id,  db: req.body})
-    .then(created => res.json(created));
+  db.User.upsert({ id: id, db: req.body }).then(created => res.json(created));
 });
 
-
-app.listen(app.get('port'), () => {
-  console.log(`Find the server at: http:/\/localhost:${app.get('port')}/`); // eslint-disable-line no-console
+app.listen(app.get("port"), () => {
+  console.log(`Find the server at: http://localhost:${app.get("port")}/`);
 });

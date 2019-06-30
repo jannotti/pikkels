@@ -1,17 +1,15 @@
 {
   "development": {
-    "username": "jj",
-    "password": null,
+    "username": "pikkels",
+    "password": "pikkelsDEV",
     "database": "pikkels",
-    "dialect": "postgres",
-    "operatorsAliases": false
+    "dialect": "postgres"
   },
   "production": {
     "username": "jj",
     "password": null,
     "database": "pikkels",
     "host": "127.0.0.1",
-    "dialect": "postgres",
-    "operatorsAliases": false
+    "dialect": "postgres"
   }
 }

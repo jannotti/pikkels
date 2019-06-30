@@ -1,0 +1,15 @@
+version: "3.1"
+services:
+  postgres:
+    image: "postgres"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=pikkels
+      - POSTGRES_PASSWORD=pikkelsDEV
+    restart: always
+
+volumes:
+  postgres-data:
