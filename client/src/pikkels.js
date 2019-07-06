@@ -1,5 +1,8 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import PropTypes from "prop-types";
+
+import gql from "graphql-tag";
+import { useQuery } from "@apollo/react-hooks";
 
 import _ from "lodash";
 import moment from "moment";
@@ -636,10 +639,10 @@ function roundRobin(teams) {
 // Does not modify the supplied lists. (Currently copies the lists
 // internally, but could maintain positions.)
 function fairMerge(...lists) {
-  var copies = lists.map(l => [...l].reverse());
-  var total = lists.reduce((n, lst) => n + lst.length, 0);
+  const copies = lists.map(l => [...l].reverse());
+  let total = lists.reduce((n, lst) => n + lst.length, 0);
 
-  var merged = [];
+  const merged = [];
   while (total > 0) {
     for (const list of copies) {
       const p = list.length / total;
@@ -863,22 +866,38 @@ class Team {
 }
 
 const MODES = ["Schedule", "Play", "Display"];
+const QUERY = gql`
+  {
+    user(id: "1") {
+      username
+    }
+    me {
+      username
+    }
+    users {
+      username
+    }
+  }
+`;
 
-class Pikkels extends React.Component {
-  state = {
-    league: hydrate(League, DB.leagues[0], DB, {}),
-    mode: MODES[0],
+const Pikkels = () => {
+  const db = DB;
+  const [league, setLeague] = useState(
+    useMemo(() => hydrate(League, db.leagues[0], db, {}), [db]),
+  );
+  const [mode, setMode] = useState(MODES[0]);
+  const { data, loading } = useQuery(QUERY);
+
+  const [forced, setForced] = useState(0);
+  const forceUpdate = () => {
+    setForced(forced + 1);
   };
 
-  handleModeChange = event => {
-    this.setState({ mode: event.target.value });
-  };
-
-  handleRandomize = () => {
-    var games = this.state.league.clearGames(); // removes unpinned games
+  const handleRandomize = () => {
+    var games = league.clearGames(); // removes unpinned games
     if (games.length === 0) {
       // Either all pinned, or none scheduled.  Assume latter for now - new board.
-      const matchups = _.shuffle(this.state.league.allMatchups());
+      const matchups = _.shuffle(league.allMatchups());
       games = matchups.map(m => new Game(m));
     }
 
@@ -887,55 +906,48 @@ class Pikkels extends React.Component {
     // constainst limit options) and put them into viable places
     // first.
 
-    // Just fill
-    for (const [, time, game, slots] of this.state.league.schedule.games()) {
+    // Fill greedily
+    for (const [, time, game, slots] of league.schedule.games()) {
       if (!game) slots[time] = games.pop();
     }
-    this.state.league.schedule.leftover = games;
-    this.setState({});
+    league.schedule.leftover = games;
+    setLeague(league);
+    forceUpdate();
   };
 
-  handleFix = () => {
-    this.state.league.schedule.fix();
-    this.setState({});
+  const handleFix = () => {
+    league.schedule.fix();
+    forceUpdate();
   };
 
-  onUpdate = () => {
-    this.forceUpdate();
-  };
-
-  render() {
-    const { league, mode } = this.state;
-    if (!league) {
-      return <div>No League</div>;
-    }
-    console.log(this.state);
-    const factors = [...league.schedule.times(), ...league.schedule.dates()];
-    return (
-      <div className="league">
-        <h1>
-          {league.name} {league.year}
-        </h1>
-        <Picker value={mode} onChange={this.handleModeChange} choices={MODES} />
-        <Divisions
-          league={league}
-          mode={mode}
-          factors={factors}
-          onUpdate={this.onUpdate}
-        />
-        <ExtraMatchups league={league} onUpdate={this.onUpdate} />
-        <Button color="primary" variant="raised" onClick={this.handleRandomize}>
-          Randomize
-        </Button>
-        &nbsp;
-        <Button color="primary" variant="raised" onClick={this.handleFix}>
-          Fix
-        </Button>
-        <Calendar schedule={league.schedule} onUpdate={this.onUpdate} />
-      </div>
-    );
+  if (loading) {
+    return <div>Loading</div>;
   }
-}
+
+  if (!league) {
+    return <div>No League</div>;
+  }
+  console.log(league, mode);
+  const factors = [...league.schedule.times(), ...league.schedule.dates()];
+  return (
+    <div className="league">
+      <h1>
+        {league.name} {league.year}
+      </h1>
+      <Picker value={mode} onChange={ev => setMode(ev.target.value)} choices={MODES} />
+      <Divisions league={league} mode={mode} factors={factors} onUpdate={forceUpdate} />
+      <ExtraMatchups league={league} onUpdate={forceUpdate} />
+      <Button color="primary" variant="raised" onClick={handleRandomize}>
+        Randomize
+      </Button>
+      &nbsp;
+      <Button color="primary" variant="raised" onClick={handleFix}>
+        Fix
+      </Button>
+      <Calendar schedule={league.schedule} onUpdate={forceUpdate} />
+    </div>
+  );
+};
 
 const Divisions = ({ league, mode, factors, onUpdate }) => {
   const divisions = league.divisions.map(division => (
@@ -951,7 +963,10 @@ const Divisions = ({ league, mode, factors, onUpdate }) => {
 };
 
 Divisions.propTypes = {
-  mode: PropTypes.oneOf(MODES),
+  league: PropTypes.instanceOf(League).isRequired,
+  mode: PropTypes.oneOf(MODES).isRequired,
+  factors: PropTypes.arrayOf(PropTypes.string),
+  onUpdate: PropTypes.func.isRequired,
 };
 
 const ExtraMatchups = ({ league, onUpdate }) => {
@@ -1001,145 +1016,132 @@ const ExtraMatchups = ({ league, onUpdate }) => {
   );
 };
 
-class ExtraMatchup extends React.Component {
-  handleTeamChange(m, event, index, value) {
-    const { matchup, teams, onUpdate } = this.props;
+const ExtraMatchup = ({ matchup, teams, onUpdate }) => {
+  function handleTeamChange(m, event, index) {
     matchup[m] = teams[index];
     onUpdate();
   }
-  render() {
-    const { matchup, teams } = this.props;
-    return (
-      <span>
-        <Picker
-          value={matchup[0]}
-          choices={teams}
-          labeler={t => t.name}
-          onChange={(e, i, v) => this.handleTeamChange(0, e, i, v)}
-        />
-        <Picker
-          value={matchup[1]}
-          choices={teams}
-          labeler={t => t.name}
-          onChange={(e, i, v) => this.handleTeamChange(1, e, i, v)}
-        />
-      </span>
-    );
-  }
-}
+  return (
+    <span>
+      <Picker
+        value={matchup[0]}
+        choices={teams}
+        labeler={t => t.name}
+        onChange={(e, i) => handleTeamChange(0, e, i)}
+      />
+      <Picker
+        value={matchup[1]}
+        choices={teams}
+        labeler={t => t.name}
+        onChange={(e, i) => handleTeamChange(1, e, i)}
+      />
+    </span>
+  );
+};
 
-class TeamList extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      editing: 0,
-    };
-  }
-  edit(id) {
-    this.setState({ editing: id });
-  }
-  handleKeyDown(event, named) {
+const TeamList = ({ division, mode, factors, onUpdate }) => {
+  const [editing, setEditing] = useState(0);
+
+  function handleKeyDown(event) {
     if (event.keyCode === 13) {
-      [named.name, named.nick] = extractParenthetical(event.target.value);
-      this.props.onUpdate();
+      [division.name, division.nick] = extractParenthetical(event.target.value);
+      onUpdate();
       event.target.blur();
     }
     if (event.keyCode === 27) {
       event.target.blur();
     }
   }
-  handleGamesChange(value) {
-    this.props.division.gpt = value;
-    this.props.onUpdate();
+  function handleGamesChange(value) {
+    division.gpt = value;
+    onUpdate();
   }
-  addTeam() {
-    const num = this.props.division.teams.length;
+  function addTeam() {
+    const num = division.teams.length;
     const team = new Team("Team " + num);
-    this.props.division.addTeam(team);
-    this.props.onUpdate();
+    division.addTeam(team);
+    onUpdate();
   }
 
-  renderHead() {
-    const division = this.props.division;
-    if (this.state.editing === this.props.division.id) {
+  function renderHead() {
+    if (editing === division.id) {
       return (
         <input
           type="text"
           autoFocus
           size="30"
-          onKeyDown={e => this.handleKeyDown(e, division)}
-          onBlur={() => this.edit(0)}
+          onKeyDown={handleKeyDown}
+          onBlur={() => setEditing(0)}
           defaultValue={division.editName()}
         />
       );
     } else {
-      return <div onClick={() => this.edit(division.id)}>{division.name} Division</div>;
+      return (
+        <div onClick={() => setEditing(division.id)}>{division.name} Division</div>
+      );
     }
   }
 
-  render() {
-    const { division, mode, factors } = this.props;
-    // _.sortBy is used for stability, so ties broken by the orignal lexical sort
-    const lines = _.sortBy(
-      division.teams.sort((a, b) => a.name.localeCompare(b.name)),
-      t => -t.rank(),
-    ).map(team => (
-      <TeamLine
-        editing={this.state.editing === team.id}
-        onEdit={id => this.edit(id)}
-        key={team.id}
-        team={team}
-        mode={mode}
-        factors={factors}
-        onUpdate={this.props.onUpdate}
-      />
-    ));
+  // _.sortBy is used for stability, so ties broken by the orignal lexical sort
+  const lines = _.sortBy(
+    division.teams.sort((a, b) => a.name.localeCompare(b.name)),
+    t => -t.rank(),
+  ).map(team => (
+    <TeamLine
+      editing={editing === team.id}
+      onEdit={setEditing}
+      key={team.id}
+      team={team}
+      mode={mode}
+      factors={factors}
+      onUpdate={onUpdate}
+    />
+  ));
 
-    const record =
-      mode === "Schedule" ? (
-        ""
-      ) : (
-        <div className="row">
-          <div className="col-6" />
-          <div className="col">Wins</div>
-          <div className="col">Losses</div>
-        </div>
-      );
-
-    let gpts = division.teams.map((t, i) => i + 1);
-    if (division.teams.length % 2 === 1) gpts = gpts.filter(g => g % 2 === 0);
-    const games = (
-      <Picker
-        value={division.gpt}
-        choices={gpts}
-        onChange={e => this.handleGamesChange(e.target.value)}
-      />
-    );
-    const summary =
-      mode !== "Schedule" ? (
-        ""
-      ) : (
-        <span className="summary">Requires {division.gameCount()} games.</span>
-      );
-    return (
-      <div className={slug(division.nickname()) + " division col-md"}>
-        <h2>{this.renderHead()}</h2>
-        {record}
-        {lines}
-        {mode !== "Schedule" ? (
-          ""
-        ) : (
-          <div className="add" onClick={() => this.addTeam()}>
-            +
-          </div>
-        )}
-        {games}
-        <br />
-        {summary}
+  const record =
+    mode === "Schedule" ? (
+      ""
+    ) : (
+      <div className="row">
+        <div className="col-6" />
+        <div className="col">Wins</div>
+        <div className="col">Losses</div>
       </div>
     );
-  }
-}
+
+  let gpts = division.teams.map((t, i) => i + 1);
+  if (division.teams.length % 2 === 1) gpts = gpts.filter(g => g % 2 === 0);
+  const games = (
+    <Picker
+      value={division.gpt}
+      choices={gpts}
+      onChange={e => handleGamesChange(e.target.value)}
+    />
+  );
+  const summary =
+    mode !== "Schedule" ? (
+      ""
+    ) : (
+      <span className="summary">Requires {division.gameCount()} games.</span>
+    );
+  return (
+    <div className={slug(division.nickname()) + " division col-md"}>
+      <h2>{renderHead()}</h2>
+      {record}
+      {lines}
+      {mode !== "Schedule" ? (
+        ""
+      ) : (
+        <div className="add" onClick={addTeam}>
+          +
+        </div>
+      )}
+      {games}
+      <br />
+      {summary}
+    </div>
+  );
+};
 
 function identity(x) {
   return x;
@@ -1170,45 +1172,36 @@ const MenuItems = ({ values, labels, open, anchor, onPick, onClose }) => {
   );
 };
 
-class TeamLine extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      adding: false,
-    };
-  }
+const TeamLine = ({ team, mode, factors, editing, onEdit, onUpdate }) => {
+  const [adding, setAdding] = useState(false);
+  const [anchor, setAnchor] = useState(null);
 
-  remove(team, hatred) {
+  function remove(hatred) {
     team.exclude = team.exclude.filter(val => val !== hatred);
-    this.setState({ team });
-    this.props.onUpdate();
+    onUpdate();
   }
 
-  add(team, hatred) {
+  function add(hatred) {
     if (!team.exclude.includes(hatred)) {
       team.exclude.push(hatred);
       team.exclude.sort();
     }
-    this.setState({ adding: false });
-    this.props.onUpdate();
+    setAdding(false);
+    onUpdate();
   }
 
-  handleClick(event) {
-    this.setState({
-      adding: true,
-      anchor: event.currentTarget,
-    });
+  function handleClick(event) {
+    setAdding(true);
+    setAnchor(event.currentTarget);
   }
 
-  handleKeyDown(event, named) {
+  function handleKeyDown(event) {
     if (event.keyCode === 13) {
-      [named.name, named.nick] = extractParenthetical(event.target.value);
-      if (named.name === "") {
-        console.log(named.division);
-        named.division.removeTeam(named);
-        console.log(named.division);
+      [team.name, team.nick] = extractParenthetical(event.target.value);
+      if (team.name === "") {
+        team.division.removeTeam(team);
       }
-      this.props.onUpdate();
+      onUpdate();
       event.target.blur();
     }
     if (event.keyCode === 27) {
@@ -1216,69 +1209,66 @@ class TeamLine extends React.Component {
     }
   }
 
-  render() {
-    const { team, mode, factors, editing, onEdit } = this.props;
-    if (mode === "Schedule") {
-      const styles = {
-        chip: {
-          margin: 2,
-        },
-        hates: {
-          display: "inline-flex",
-          flexWrap: "nowrap",
-        },
-      };
-      var chips = team.exclude.map(hatred => (
-        <Chip key={hatred} label={hatred} onDelete={() => this.remove(team, hatred)} />
-      ));
-      let label = (
-        <div className="col-6" onClick={() => onEdit(team.id)}>
-          {team.name}
-        </div>
-      );
+  if (mode === "Schedule") {
+    const styles = {
+      chip: {
+        margin: 2,
+      },
+      hates: {
+        display: "inline-flex",
+        flexWrap: "nowrap",
+      },
+    };
+    var chips = team.exclude.map(hatred => (
+      <Chip key={hatred} label={hatred} onDelete={() => remove(hatred)} />
+    ));
+    let label = (
+      <div className="col-6" onClick={() => onEdit(team.id)}>
+        {team.name}
+      </div>
+    );
 
-      if (editing) {
-        label = (
-          <div className="col-6">
-            <input
-              type="text"
-              autoFocus
-              size="42"
-              onKeyDown={e => this.handleKeyDown(e, team)}
-              onBlur={() => onEdit(0)}
-              defaultValue={team.editName()}
-            />
-          </div>
-        );
-      }
-      return (
-        <div className="row team" key={team.id}>
-          {label}
-          <div className="col">
-            <Icon color="action" onClick={ev => this.handleClick(ev)}>
-              thumb_down
-            </Icon>
-            <MenuItems
-              values={factors}
-              open={this.state.adding}
-              anchor={this.state.anchor}
-              onPick={choice => this.add(team, choice)}
-              onClose={() => this.setState({ adding: false })}
-            />
-            <div style={styles.hates}>{chips}</div>
-          </div>
+    if (editing) {
+      label = (
+        <div className="col-6">
+          <input
+            type="text"
+            autoFocus
+            size="42"
+            onKeyDown={handleKeyDown}
+            onBlur={() => onEdit(0)}
+            defaultValue={team.editName()}
+          />
         </div>
       );
     }
     return (
-      <div className="row team">
-        <div className="col-6">{team.name}</div>
-        <div className="col wins">{team.wins()}</div>
-        <div className="col losses">{team.losses()}</div>
+      <div className="row team" key={team.id}>
+        {label}
+        <div className="col">
+          <Icon color="action" onClick={handleClick}>
+            thumb_down
+          </Icon>
+          <MenuItems
+            values={factors}
+            open={adding}
+            anchor={anchor}
+            onPick={choice => add(choice)}
+            onClose={() => setAdding(false)}
+          />
+          <div style={styles.hates}>{chips}</div>
+        </div>
       </div>
     );
   }
-}
+  return (
+    <div className="row team">
+      <div className="col-6">{team.name}</div>
+      <div className="col wins">{team.wins()}</div>
+      <div className="col losses">{team.losses()}</div>
+    </div>
+  );
+};
 
 const Calendar = ({ schedule, onUpdate }) => {
   const [target, setTarget] = useState(null);
@@ -1488,39 +1478,32 @@ const Slot = ({
   }
   return (
     <div className={slotClass + " game col-md-2 col-xl"}>
-      <GameControl game={game} time={time} moving={moving} moveClick={moveClick} />
+      <GameControl {...{ game, time, moving, moveClick, onUpdate }} />
       {bill}
     </div>
   );
 };
 
-class GameControl extends React.Component {
-  togglePin = () => {
-    var { game } = this.props;
+const GameControl = ({ game, time, moving, moveClick, onUpdate }) => {
+  function togglePin() {
     game.pinned = !game.pinned;
-    this.forceUpdate();
-  };
-
-  render() {
-    var { game, time, moving, moveClick } = this.props;
-    var timeOrScore = game && game.score ? game.score[0] + "-" + game.score[1] : time;
-    return (
-      <div>
-        <span className={moving ? "moving" : "prepmove"} onClick={moveClick}>
-          <img width="20" alt="move" src="image/move.png" />
-        </span>
-        {game && (
-          <span
-            className={game.pinned ? "pinned" : "unpinned"}
-            onClick={() => this.togglePin(game)}
-          >
-            <img width="20" alt="pin" src="image/pin.png" />
-          </span>
-        )}
-        <span className="float-right text-muted hidden-xl-up">{timeOrScore}</span>
-      </div>
-    );
+    onUpdate();
   }
-}
+
+  var timeOrScore = game && game.score ? game.score[0] + "-" + game.score[1] : time;
+  return (
+    <div>
+      <span className={moving ? "moving" : "prepmove"} onClick={moveClick}>
+        <img width="20" alt="move" src="image/move.png" />
+      </span>
+      {game && (
+        <span className={game.pinned ? "pinned" : "unpinned"} onClick={togglePin}>
+          <img width="20" alt="pin" src="image/pin.png" />
+        </span>
+      )}
+      <span className="float-right text-muted hidden-xl-up">{timeOrScore}</span>
+    </div>
+  );
+};
 
 export default Pikkels;
