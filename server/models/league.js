@@ -1,6 +1,6 @@
 "use strict";
 module.exports = (sequelize, DataTypes) => {
-  const User = sequelize.define("User", {
+  const League = sequelize.define("League", {
     id: {
       primaryKey: true,
       type: DataTypes.STRING,
@@ -11,8 +11,8 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.JSON,
     },
   });
-  User.associate = function(models) {
+  League.associate = function(models) {
     // associations can be defined here
   };
-  return User;
+  return League;
 };

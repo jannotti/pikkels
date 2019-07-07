@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 
 import gql from "graphql-tag";
@@ -14,152 +14,9 @@ import Menu from "@material-ui/core/Menu";
 import MenuItem from "@material-ui/core/MenuItem";
 import Select from "@material-ui/core/Select";
 
-const LATE = ["3PM", "4PM", "5PM", "6PM"];
-
-const DB = {
-  leagues: [1],
-  1: {
-    name: "Providence Kickball",
-    nick: "PKL",
-    year: 2018,
-    schedule: 21,
-    divisions: [2],
-  },
-
-  2: {
-    name: "United",
-    gpt: 10,
-    ensure: [
-      [3, 4],
-      [5, 6],
-      [7, 8], // good teams play each other
-      [18, 19],
-      [16, 17], // bad teams play each other
-      [4, 16], // wanted matchups
-    ],
-    avoid: [
-      [3, 17],
-      [3, 18],
-      [3, 19], // best don't play worst 3
-      [4, 18],
-      [4, 19], // 2nd best don't play worst 2
-      [5, 17], // 3rd don't play worst
-      [10, 12],
-      [3, 8],
-      [8, 17],
-      [3, 17], // unwanted matchups (new, corey, several)
-      [7, 18], // dexter / jedi (middle vs edge)
-    ],
-    teams: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
-  },
-  3: { name: "Muscle Cobra, Inc.", nick: "Muscle Cobra", exclude: ["Jun 1", "Jul 13"] },
-  4: { name: "Black Sheep", exclude: ["Jun 8", "Jul 20"] },
-  5: { name: "Trippin' Marios", nick: "Marios", exclude: ["Jun 22", "Jul 27"] },
-  6: { name: "The Wolfpack", nick: "Wolfpack", exclude: ["Jun 1"] },
-  7: {
-    name: "Dexter Park Dads",
-    nick: "Dads",
-    exclude: ["Jul 6", "Jul 13", "11AM", "12PM", "4PM", "5PM", "6PM"],
-  },
-  8: {
-    name: "Narragansett Baywatch",
-    nick: "Baywatch",
-    exclude: ["Jun 22", "Jul 20", "Aug 31", "11AM", "12PM"],
-  },
-  9: { name: "Unstoppaballs", exclude: ["May 25", "Jun 8", "Jun 29", "Jul 13"] },
-  10: { name: "OPR", exclude: ["May 25", "Jun 15", "Jul 13", "Aug 31"] },
-  11: {
-    name: "Fox Point Booters",
-    nick: "Fox Point",
-    exclude: ["May 25", "Jun 29", "Jul 6"],
-  },
-  12: { name: "Schwetty Balls", nick: "Schwetty" },
-  13: { name: "Menace II Sobriety", nick: "Menaces", exclude: [...LATE] },
-  14: { name: "Meat Sweats", exclude: ["Jun 15", "Jul 13"] },
-  15: { name: "Suck My Kick", nick: "Suck", exclude: ["Jun 15", "Aug 31", ...LATE] },
-  16: { name: "Bad Taste", exclude: ["Jun 1", "Jun 8", "Jun 15"] },
-  17: {
-    name: "Glamazons",
-    exclude: ["Jun 22", "Jul 27", "Aug 24", "11AM", "12PM", "1PM"],
-  },
-  18: {
-    name: "Jedi Mind Kicks",
-    exclude: ["1PM", "2PM", "3PM", "4PM", "Jun 22", "Jun 29"],
-  },
-  19: { name: "C U Next Tuesday", nick: "Clams" },
-
-  21: {
-    leftover: [],
-    calendar: {
-      "May 25": {
-        "11AM": 0,
-        "12PM": 0,
-        "1PM": 0,
-        "2PM": 0,
-        "3PM": 0,
-        "4PM": 0,
-        "5PM": 0,
-      },
-      "Jun 1": { "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0 },
-      "Jun 8": { "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0 },
-      "Jun 15": {
-        "12PM": 0,
-        "1PM": 0,
-        "2PM": 0,
-        "3PM": 0,
-        "4PM": 0,
-        "5PM": 0,
-      },
-      "Jun 22": { "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0 },
-      "Jun 29": { "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0 },
-      "Jul 13": {
-        "12PM": 0,
-        "1PM": 0,
-        "2PM": 0,
-        "3PM": 0,
-        "4PM": 0,
-        "5PM": 0,
-      },
-      "Jul 20": {
-        "11AM": 0,
-        "12PM": 0,
-        "1PM": 0,
-        "2PM": 0,
-        "3PM": 0,
-        "4PM": 0,
-        "5PM": 0,
-      },
-      "Jul 27": {
-        "11AM": 0,
-        "12PM": 0,
-        "1PM": 0,
-        "2PM": 0,
-        "3PM": 0,
-        "4PM": 0,
-        "5PM": 0,
-      },
-      "Aug 3": {
-        "11AM": 0,
-        "12PM": 0,
-        "1PM": 0,
-        "2PM": 0,
-        "3PM": 0,
-        "4PM": 0,
-        "5PM": 0,
-      },
-      "Aug 10": { "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0 },
-      "Aug 17": { "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0 },
-      "Aug 24": { "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0 },
-      "Aug 31": { "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0 },
-    },
-  },
-};
-
 function slug(...strings) {
-  var s = strings.join().toLowerCase();
-  s = s.replace(/[^A-Za-z0-9]+/g, "=");
-  s = s.replace(/=+/g, "-");
-  return s;
+  let s = strings.join(" ").toLowerCase();
+  return s.replace(/[^A-Za-z0-9-]+/g, "-");
 }
 
 function extractParenthetical(str) {
@@ -577,7 +434,6 @@ class Division {
       }
       for (const matchup of this.ensure) {
         const m = possible.find(p => matches(matchup, p));
-        console.log(matchup, m);
         used.add(m);
         counts[m[0].id]++;
         counts[m[1].id]++;
@@ -877,14 +733,14 @@ const QUERY = gql`
     users {
       username
     }
+    league(id: "1") {
+      text
+    }
   }
 `;
 
 const Pikkels = () => {
-  const db = DB;
-  const [league, setLeague] = useState(
-    useMemo(() => hydrate(League, db.leagues[0], db, {}), [db]),
-  );
+  const [league, setLeague] = useState();
   const [mode, setMode] = useState(MODES[0]);
   const { data, loading } = useQuery(QUERY);
 
@@ -892,6 +748,14 @@ const Pikkels = () => {
   const forceUpdate = () => {
     setForced(forced + 1);
   };
+
+  useEffect(
+    () => {
+      if (data.league) setLeague(hydrate(League, 1, JSON.parse(data.league.text), {}));
+      console.log("hydrate");
+    },
+    [data.league],
+  );
 
   const handleRandomize = () => {
     var games = league.clearGames(); // removes unpinned games
@@ -911,7 +775,6 @@ const Pikkels = () => {
       if (!game) slots[time] = games.pop();
     }
     league.schedule.leftover = games;
-    setLeague(league);
     forceUpdate();
   };
 
@@ -927,7 +790,7 @@ const Pikkels = () => {
   if (!league) {
     return <div>No League</div>;
   }
-  console.log(league, mode);
+
   const factors = [...league.schedule.times(), ...league.schedule.dates()];
   return (
     <div className="league">
@@ -937,11 +800,11 @@ const Pikkels = () => {
       <Picker value={mode} onChange={ev => setMode(ev.target.value)} choices={MODES} />
       <Divisions league={league} mode={mode} factors={factors} onUpdate={forceUpdate} />
       <ExtraMatchups league={league} onUpdate={forceUpdate} />
-      <Button color="primary" variant="raised" onClick={handleRandomize}>
+      <Button color="primary" variant="contained" onClick={handleRandomize}>
         Randomize
       </Button>
       &nbsp;
-      <Button color="primary" variant="raised" onClick={handleFix}>
+      <Button color="primary" variant="contained" onClick={handleFix}>
         Fix
       </Button>
       <Calendar schedule={league.schedule} onUpdate={forceUpdate} />
@@ -970,6 +833,8 @@ Divisions.propTypes = {
 };
 
 const ExtraMatchups = ({ league, onUpdate }) => {
+  if (league.divisions.length !== 2) return null;
+
   function remove(i) {
     league.deschedule(league.extra[i]);
     league.extra.splice(i, 1);
@@ -1005,7 +870,6 @@ const ExtraMatchups = ({ league, onUpdate }) => {
       <Icon onClick={() => remove(i)}>delete</Icon>
     </li>
   ));
-  if (league.divisions.length < 2) return <div />;
   return (
     <div className="extra">
       <ol>
@@ -1014,6 +878,10 @@ const ExtraMatchups = ({ league, onUpdate }) => {
       </ol>
     </div>
   );
+};
+ExtraMatchups.propTypes = {
+  league: PropTypes.instanceOf(League).isRequired,
+  onUpdate: PropTypes.func.isRequired,
 };
 
 const ExtraMatchup = ({ matchup, teams, onUpdate }) => {
@@ -1038,6 +906,11 @@ const ExtraMatchup = ({ matchup, teams, onUpdate }) => {
     </span>
   );
 };
+ExtraMatchup.propTypes = {
+  matchup: PropTypes.arrayOf(PropTypes.instanceOf(Team)).isRequired,
+  teams: PropTypes.arrayOf(PropTypes.instanceOf(Team)).isRequired,
+  onUpdate: PropTypes.func.isRequired,
+};
 
 const TeamList = ({ division, mode, factors, onUpdate }) => {
   const [editing, setEditing] = useState(0);
@@ -1052,10 +925,12 @@ const TeamList = ({ division, mode, factors, onUpdate }) => {
       event.target.blur();
     }
   }
+
   function handleGamesChange(value) {
     division.gpt = value;
     onUpdate();
   }
+
   function addTeam() {
     const num = division.teams.length;
     const team = new Team("Team " + num);
@@ -1424,6 +1299,10 @@ const Slot = ({
   function moveClick() {
     setTarget([date, time]);
   }
+  function togglePin() {
+    game.pinned = !game.pinned;
+    onUpdate();
+  }
 
   function teamClick(i) {
     if (game.winner === game.matchup[i]) game.winner = null;
@@ -1478,19 +1357,14 @@ const Slot = ({
   }
   return (
     <div className={slotClass + " game col-md-2 col-xl"}>
-      <GameControl {...{ game, time, moving, moveClick, onUpdate }} />
+      <GameControl {...{ game, time, moving, moveClick, togglePin }} />
       {bill}
     </div>
   );
 };
 
-const GameControl = ({ game, time, moving, moveClick, onUpdate }) => {
-  function togglePin() {
-    game.pinned = !game.pinned;
-    onUpdate();
-  }
-
-  var timeOrScore = game && game.score ? game.score[0] + "-" + game.score[1] : time;
+const GameControl = ({ game, time, moving, moveClick, togglePin }) => {
+  const timeOrScore = game && game.score ? game.score[0] + "-" + game.score[1] : time;
   return (
     <div>
       <span className={moving ? "moving" : "prepmove"} onClick={moveClick}>
@@ -1504,6 +1378,13 @@ const GameControl = ({ game, time, moving, moveClick, onUpdate }) => {
       <span className="float-right text-muted hidden-xl-up">{timeOrScore}</span>
     </div>
   );
+};
+GameControl.propTypes = {
+  game: PropTypes.instanceOf(Game),
+  time: PropTypes.string.isRequired,
+  moving: PropTypes.bool.isRequired,
+  moveClick: PropTypes.func.isRequired,
+  togglePin: PropTypes.func.isRequired,
 };
 
 export default Pikkels;
