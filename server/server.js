@@ -21,6 +21,7 @@ const apollo = new ApolloServer({
   typeDefs: schema,
   resolvers,
   context: {
+    models,
     me: users[1],
   },
 });
@@ -36,7 +37,7 @@ app.get("/api/user", (req, res) => {
     });
     return;
   }
-  models.User.finmodelsyPk(id).then(user => res.json(user));
+  models.User.findbyPk(id).then(user => res.json(user));
 });
 
 app.post("/api/user", (req, res) => {

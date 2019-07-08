@@ -1,18 +1,15 @@
-"use strict";
-module.exports = (sequelize, DataTypes) => {
-  const League = sequelize.define("League", {
-    id: {
-      primaryKey: true,
+const league = (sequelize, DataTypes) => {
+  const League = sequelize.define("league", {
+    text: {
       type: DataTypes.STRING,
-      defaultValue: DataTypes.UUIDV4,
-    },
-    db: {
-      allowNull: false,
-      type: DataTypes.JSON,
     },
   });
-  League.associate = function(models) {
-    // associations can be defined here
+
+  League.associate = models => {
+    League.belongsTo(models.user);
   };
+
   return League;
 };
+
+export default league;

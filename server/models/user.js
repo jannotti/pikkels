@@ -1,18 +1,15 @@
-"use strict";
-module.exports = (sequelize, DataTypes) => {
-  const User = sequelize.define("User", {
-    id: {
-      primaryKey: true,
+const user = (sequelize, DataTypes) => {
+  const User = sequelize.define("user", {
+    username: {
       type: DataTypes.STRING,
-      defaultValue: DataTypes.UUIDV4,
-    },
-    db: {
-      allowNull: false,
-      type: DataTypes.JSON,
     },
   });
-  User.associate = function(models) {
-    // associations can be defined here
+
+  User.associate = models => {
+    User.hasMany(models.league, { onDelete: "CASCADE" });
   };
+
   return User;
 };
+
+export default user;
