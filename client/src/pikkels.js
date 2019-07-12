@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 
 import gql from "graphql-tag";
-import { useQuery } from "@apollo/react-hooks";
+import { useMutation, useQuery } from "@apollo/react-hooks";
 
 import _ from "lodash";
 import moment from "moment";
@@ -722,19 +722,17 @@ class Team {
 }
 
 const MODES = ["Schedule", "Play", "Display"];
-const QUERY = gql`
+const GET_LEAGUE = gql`
   {
-    user(id: "1") {
-      username
-    }
-    me {
-      username
-    }
-    users {
-      username
-    }
     league(id: "1") {
       text
+    }
+  }
+`;
+const SET_LEAGUE = gql`
+  mutation createLeague($text: String!) {
+    createLeague(text: $text) {
+      id
     }
   }
 `;
@@ -742,10 +740,12 @@ const QUERY = gql`
 const Pikkels = () => {
   const [league, setLeague] = useState();
   const [mode, setMode] = useState(MODES[0]);
-  const { data, loading } = useQuery(QUERY);
-
+  const { data, loading } = useQuery(GET_LEAGUE);
+  const [saveLeague] = useMutation(SET_LEAGUE);
   const [forced, setForced] = useState(0);
   const forceUpdate = () => {
+    console.log(league);
+    saveLeague({ variables: { text: "junk" } });
     setForced(forced + 1);
   };
 

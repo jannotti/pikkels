@@ -23,6 +23,7 @@ const schema = gql`
 
   type Mutation {
     createLeague(text: String!): League!
+    updateLeague(id: ID!, text: String!): League!
     deleteLeague(id: ID!): Boolean!
   }
 `;

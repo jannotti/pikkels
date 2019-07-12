@@ -23,9 +23,7 @@ fs.readdirSync(__dirname)
   });
 
 Object.keys(models).forEach(modelName => {
-  if (models[modelName].associate) {
-    models[modelName]?.associate(models);
-  }
+  models[modelName].associate?.(models);
 });
 
 models.sequelize = sequelize;

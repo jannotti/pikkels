@@ -31,9 +31,6 @@ const resolvers = {
     user: (parent, { id }) => {
       return users[id];
     },
-    users: () => {
-      return Object.values(users);
-    },
     league: (parent, { id }) => {
       return leagues[id];
     },
@@ -44,6 +41,7 @@ const resolvers = {
 
   Mutation: {
     createLeague: (parent, { text }, { me }) => {
+      console.log("cl", text, me);
       const id = uuidv4();
       const league = {
         id,
@@ -52,7 +50,16 @@ const resolvers = {
       };
 
       leagues[id] = league;
-      // users[me.id].leagueIds.push(id);
+      return league;
+    },
+    updateLeague: (parent, { id, text }, { me }) => {
+      console.log("ul", id, text, me);
+      const league = {
+        id,
+        text,
+        userId: me.id,
+      };
+      leagues[id] = league;
       return league;
     },
     deleteLeague: (parent, { id }) => {
