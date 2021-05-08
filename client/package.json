@@ -17,7 +17,7 @@
     "classnames": "^2.2.6",
     "firebase": "^6.0.2",
     "graphql": "^14.4.2",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.21",
     "material-ui": "^0.20.2",
     "moment": "^2.24.0",
     "react": "^16.8.6",
